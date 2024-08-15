@@ -1,6 +1,6 @@
 import uvicorn
-from mojito.mojito.main import Mojito
-from mojito.tests.app_routes import router as routes_router
+from mojito import Mojito
+from tests.app_routes import router as routes_router
 
 
 app = Mojito(debug=True)

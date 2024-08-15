@@ -8,23 +8,22 @@ from typing import (
 )
 from starlette.applications import Starlette, AppType
 from starlette.middleware import Middleware
-from starlette.routing import BaseRoute, Route
+from starlette.routing import BaseRoute, Route, Router, PARAM_REGEX
 from starlette.requests import Request
 from starlette.responses import Response, HTMLResponse
 from starlette.websockets import WebSocket
 from starlette.templating import Jinja2Templates
+from . import helpers
 from .globals import GlobalsMiddleware, g
-from . import message_flashing
-from .message_flashing import (
-    get_flashed_messages,
-    flash_message,
-)
+
+
+import inspect
 
 
 RouteFunctionType = Callable[[Request], Awaitable[Response] | Response]
 
 
-class AppRouter:
+class AppRouter(Router):
     def __init__(
         self, prefix: str | None = None, middleware: Sequence[Middleware] | None = None
     ) -> None:
@@ -52,51 +51,87 @@ class AppRouter:
             )
         )
 
+    def _process_endpoint_args(
+        self, request: Request, path: str, endpoint_function: Callable[..., Any]
+    ) -> dict[str, Any]:
+        """Inspect the endpoint function arguments and inject their values as **kwargs when
+        the function is called from the endpoint.
+
+        Args:
+            request (Request): starlette.Request
+            path (str): route path
+            endpoint_function (Callable[..., Any]): The endpoint function
+
+        Returns:
+            dict[str, Any]: kwargs to call the endpoint function with
+        """
+        path_params_tuple = PARAM_REGEX.findall(
+            path
+        )  # Pull the path params from the path with converter split if it exists
+        arg_specs = inspect.getfullargspec(endpoint_function)
+        path_params = [p[0] for p in path_params_tuple]  # Extract just param name
+        kwargs: dict[str, Any] = {}
+        for arg_name, arg_type in arg_specs.annotations.items():
+            arg_value: Any | None = None
+            if arg_name in path_params:
+                # Arguments in path params
+                arg_value = request.path_params.get(arg_name)
+            elif arg_type == Request:
+                # Add request to this argument
+                arg_value = request
+            else:
+                # Remaining arguments are treated as query params
+                arg_value = request.query_params.get(arg_name)
+            kwargs[arg_name] = arg_value
+        return kwargs
+
     def route(
         self,
         path: str,
         methods: list[str] | None = ["GET"],
+        name: str | None = None,
         include_in_schema: bool = True,
-    ) -> Callable[[Callable[[Request], Any]], RouteFunctionType]:
+    ) -> Callable[[Callable[..., Any]], RouteFunctionType]:
 
         def decorator(
-            func: Callable[[Request], Awaitable[Any] | Any],
+            func: Callable[..., Awaitable[Any] | Any],
         ) -> RouteFunctionType:
-            async def func_with_response(
-                request: Request, *args: tuple[Any], **kwargs: dict[str, Any]
-            ):
-                # Check if any flash messages exist
-                messages = request.cookies.get("flash_messages")
-                if messages:
-                    g.flash_messages = message_flashing.decode_message_cookie(messages)
+
+            async def endpoint_function(request: Request):
+                """Creates a function that inputs the correct arguments to the func at runtime."""
+                kwargs = self._process_endpoint_args(request, path, func)
+                g.request = request
 
                 # Ensures the function has a Response return type.
-                response = func(request, *args, **kwargs)
+                response = func(**kwargs)
                 if isinstance(response, Awaitable):
                     response = await response
-                print(
-                    f"[main decorator] g.next_flash_messages: {g.next_flash_messages}"
-                )
                 if not isinstance(response, Response):
                     # Wrap response in default HTMLResponse
                     response = HTMLResponse(str(response))
+
+                # PROCESS MESSAGE FLASHING
+                messages = request.cookies.get("flash_messages")
+                if messages:
+                    g.flash_messages = helpers.decode_message_cookie(messages)
                 if g.next_flash_messages:
                     response.set_cookie(
                         "flash_messages",
-                        message_flashing.encode_message_cookie(
-                            g.next_flash_message
-                        ).decode("utf-8"),
+                        helpers.encode_message_cookie(g.next_flash_message).decode(
+                            "utf-8"
+                        ),
                     )
+                    # Check if any flash messages exist
                 return response
 
             self.add_route(
                 path,
-                func_with_response,
+                endpoint_function,
                 methods=methods,
-                name=func.__name__,
+                name=name if name else func.__name__,
                 include_in_schema=include_in_schema,
             )
-            return func_with_response
+            return func
 
         return decorator
 
@@ -144,3 +179,7 @@ class Mojito(Starlette):
 _templates_default = Jinja2Templates(".")
 TemplateResponse = _templates_default.TemplateResponse
 "Quick access to Jinja2Templates.TemplateResponse with default template Jinja2 configuration"
+
+
+def request() -> Request:
+    return g.request
