@@ -2,8 +2,8 @@ import json
 from base64 import b64decode, b64encode
 
 import itsdangerous
-from mojito.mojito.globals import g
-from mojito.mojito.config import Config
+from .globals import g
+from .config import Config
 
 
 def encode_message_cookie(message: list[str]) -> bytes:
