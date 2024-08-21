@@ -6,15 +6,19 @@ from typing import (
     Awaitable,
     AsyncContextManager,
 )
-from starlette.applications import Starlette, AppType
-from starlette.middleware import Middleware
-from starlette.routing import BaseRoute, Route, Router, PARAM_REGEX
+from starlette.applications import Starlette, AppType, P
+from starlette.middleware import Middleware, _MiddlewareClass  # type: ignore
+from starlette.routing import BaseRoute, Route, Router, PARAM_REGEX, Mount
 from starlette.requests import Request
-from starlette.responses import Response, HTMLResponse
+from starlette.responses import Response, HTMLResponse, RedirectResponse
 from starlette.websockets import WebSocket
 from starlette.templating import Jinja2Templates
 from . import helpers
 from .globals import GlobalsMiddleware, g
+from .middleware.sessions import SessionMiddleware
+from starlette.background import BackgroundTask
+from .message_flash import MessageFlashMiddleware
+from .config import Config
 
 
 import inspect
@@ -27,9 +31,22 @@ class AppRouter(Router):
     def __init__(
         self, prefix: str | None = None, middleware: Sequence[Middleware] | None = None
     ) -> None:
-        self.middleware: Sequence[Middleware] | None = middleware
+        self.middleware = [] if middleware is None else list(middleware)
         self.prefix = prefix or ""
         self.routes: list[Route] = []
+
+    def add_middleware(
+        self,
+        middleware_class: type[_MiddlewareClass[P]],
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> None:
+        """Adds includes middleware within the router.
+
+        Args:
+            middleware_class (type[_MiddlewareClass[P]]): ASGI compatible middleware
+        """
+        self.middleware.insert(0, Middleware(middleware_class, *args, **kwargs))
 
     def add_route(
         self,
@@ -47,7 +64,7 @@ class AppRouter(Router):
                 methods=methods,
                 name=name,
                 include_in_schema=include_in_schema,
-                middleware=self.middleware,
+                # middleware=self.middleware,
             )
         )
 
@@ -110,18 +127,14 @@ class AppRouter(Router):
                     # Wrap response in default HTMLResponse
                     response = HTMLResponse(str(response))
 
-                # PROCESS MESSAGE FLASHING
-                messages = request.cookies.get("flash_messages")
-                if messages:
-                    g.flash_messages = helpers.decode_message_cookie(messages)
+                # PROCESS MESSAGE FLASHING FOR NEXT REQUEST
                 if g.next_flash_messages:
                     response.set_cookie(
-                        "flash_messages",
+                        Config.MESSAGE_FLASH_COOKIE,
                         helpers.encode_message_cookie(g.next_flash_message).decode(
                             "utf-8"
                         ),
                     )
-                    # Check if any flash messages exist
                 return response
 
             self.add_route(
@@ -168,11 +181,22 @@ class Mojito(Starlette):
             lifespan,
         )
         self.add_middleware(GlobalsMiddleware)
-        # self.add_middleware(MessageFlashMiddleware, secret_key=Config.SECRET_KEY)
+        self.add_middleware(SessionMiddleware)
+        self.add_middleware(MessageFlashMiddleware)
 
     def include_router(self, router: AppRouter):
-        for route in router.routes:
-            self.routes.append(route)
+        """Mounts all the routers routes under the application with the prefix.
+
+        Args:
+            router (AppRouter): Instance of the AppRouter
+        """
+        routes = [route for route in router.routes]
+        # Mount router as subapplication
+        self.routes.append(
+            Mount(path=router.prefix, routes=routes, middleware=router.middleware)
+        )
+        # for route in router.routes:
+        #     self.routes.append(route)
 
 
 # TODO - default path should be base where app is initialized
@@ -183,3 +207,12 @@ TemplateResponse = _templates_default.TemplateResponse
 
 def request() -> Request:
     return g.request
+
+
+def redirect_to(
+    url: str,
+    status_code: int = 302,
+    headers: Mapping[str, str] | None = None,
+    background: BackgroundTask | None = None,
+):
+    return RedirectResponse(url, status_code, headers, background)

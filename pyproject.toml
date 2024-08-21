@@ -1,0 +1,25 @@
+[project]
+name = "mojito-web"
+version = "0.1.0-alpha.2"
+description = "Lightweight ASGI framework based on Starlette."
+authors = [{ name = "Austin Bauman", email = "abauman97@protonmail.com" }]
+dependencies = [
+    "starlette>=0.37.2,<0.39.0",
+    "jinja2>=3.1.0",
+    "itsdangerous>=2.2.0",
+    "python-multipart>=0.0.9",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = { text = "MIT" }
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.build]
+includes = ["mojito/"]

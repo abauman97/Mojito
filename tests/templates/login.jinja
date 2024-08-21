@@ -1,0 +1,43 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Login</title>
+
+    <link rel="icon"
+          href="/favicon.ico">
+    <link rel="icon"
+          href="/favicon.svg"
+          type="image/svg+xml">
+    <link rel="apple-touch-icon"
+          href="/apple-touch-icon.png">
+
+
+</head>
+
+<body>
+    {% if g.flash_messages %}
+    {% for message in g.flash_messages %}
+    <div style="margin: 1rem; background-color: aqua">
+        <p>{{ message }}</p>
+    </div>
+    {% endfor %}
+    {% endif %}
+    <form method="post"
+          style="display: flex; flex-direction: column;">
+        <input type="text"
+               name="email"
+               placeholder="email" />
+        <input type="password"
+               name="password"
+               placeholder="password" />
+        <button type="submit">Submit</button>
+    </form>
+</body>
+
+</html>
