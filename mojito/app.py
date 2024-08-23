@@ -93,6 +93,11 @@ class AppRouter(Router):
             if arg_name in path_params:
                 # Arguments in path params
                 arg_value = request.path_params.get(arg_name)
+            elif arg_name == "return":
+                # Handle 'return' type if one is included.
+                # https://docs.python.org/3/library/inspect.html#inspect.getfullargspec
+                # Skip processing 'return' type annotation
+                continue
             elif arg_type == Request:
                 # Add request to this argument
                 arg_value = request
