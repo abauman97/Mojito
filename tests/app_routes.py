@@ -40,10 +40,15 @@ async def login(request: Request):
         flash_message("Email or password missing")
     flash_message(f"Email: {email}")
     flash_message(f"password: {password}")
-    success = await auth.password_login(email, password)
+    success = await auth.password_login(str(email), str(password))
     return redirect_to("/")
 
 
-@router.route("/login2", methods=["GET", "POST"])
-async def login2(request: Request):
-    return await login(request)
+@router.route("/")
+async def index(request: Request):
+    return "<p>Hello, World!</p>"
+
+
+@router.route("/admin")
+async def admin(request: Request):
+    return "<p>Hello, World!</p>"

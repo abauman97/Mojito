@@ -7,6 +7,8 @@ from starlette.types import ASGIApp, Scope, Send, Receive, Message
 from .globals import g
 from .config import Config
 import hashlib
+import typing as t
+import abc
 
 
 class LoginRequiredMiddleware:
@@ -33,7 +35,7 @@ class LoginRequiredMiddleware:
             # ... Do something
             if (
                 request.url.path in self.ignore_routes
-                or request.url.path in Config.LOGIN_URL
+                or request.url.path == Config.LOGIN_URL
             ):
                 # Skip for routes registered as login_not_required
                 return await send(message)
@@ -47,25 +49,64 @@ class LoginRequiredMiddleware:
 
 
 class AuthBase:
-    "Preconfigured authentication helpers"
+    """Base class that all authentication methods should implement.
 
-    def hash_password(self, password: str):
+    Subclasses must implement authorize() and authenticate() methods.
+    """
+
+    @staticmethod
+    def hash_password(password: str):
         return hashlib.sha256(password.encode()).hexdigest()
 
+    @abc.abstractmethod
     async def authorize(self, scopes: list[str]) -> bool:
-        "Method to check if the user has the required scopes"
+        """Method to check if the user has the required scopes
+
+        Args:
+            scopes (list[str]): list of scopes to check check that the user has.
+
+        Raises:
+            NotImplementedError: Method not implemented.
+
+        Returns:
+            bool: User is authorized
+        """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     async def authenticate(
         self, request: Request, username: str, password: str
-    ) -> tuple[str, str] | None:
-        "Method to be overridden with different authentication methods. Returns a tuple with (is_authenticated: bool, scopes: list[str])"
+    ) -> tuple[bool, t.List[str]] | None:
+        """Method to authenticate the user based on the users username and password. Will
+        be used by the password_login() function to authenticate the user.
+
+        Args:
+            request (Request): Mojito/Starlette request object
+            username (str): The users username
+            password (str): The users password in plain text. Stored passwords should be
+                hashed and compared to check validity. This base class provides hash_password()
+                static method to easily compare the hashed vs the given password.
+
+        Raises:
+            NotImplementedError: Method not implemented
+
+        Returns:
+            tuple[bool, t.List[str]] | None: (is_authenticated: bool, user_scopes: t.List[str])
+        """
         raise NotImplementedError()
+
+
+class AuthConfig:
+    auth_handler: t.Optional[t.Type[AuthBase]] = None
+
+
+def add_auth_handler(handler: t.Type[AuthBase]):
+    AuthConfig.auth_handler = handler
 
 
 async def password_login(username: str, password: str):
     """Login user based on username and password. Authenticates user and sets data on the
-    session object.
+    session object. Uses the
 
     Args:
         username (str): _description_
@@ -73,7 +114,11 @@ async def password_login(username: str, password: str):
     """
     # Use auth handler function to get the is_authenticated and scopes
     request: Request = g.request
-    auth = AuthBase()  # Get Auth class from config
+    if not AuthConfig.auth_handler:
+        raise NotImplementedError(
+            "an auth handler must be defined to use password_login"
+        )
+    auth = AuthConfig.auth_handler()  # Get Auth class from config
     result = await auth.authenticate(
         request=request, username=username, password=password
     )
