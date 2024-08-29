@@ -1,12 +1,13 @@
-from mojito import (
-    Mojito,
-    AppRouter,
-    auth,
-    Jinja2Templates,
-    Request,
-    JSONResponse,
-)
 from asyncio import sleep
+
+from mojito import (
+    AppRouter,
+    Jinja2Templates,
+    JSONResponse,
+    Mojito,
+    Request,
+    auth,
+)
 
 app = Mojito()
 

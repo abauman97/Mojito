@@ -6,7 +6,6 @@ from base64 import b64decode
 
 import itsdangerous
 from itsdangerous.exc import BadSignature
-
 from starlette.datastructures import Secret
 from starlette.requests import HTTPConnection
 from starlette.types import ASGIApp, Receive, Scope, Send

@@ -29,3 +29,9 @@ includes = ["mojito/"]
 
 [tool.pdm.dev-dependencies]
 test = ["pytest>=8.3.2"]
+
+[tool.mypy]
+strict = true
+
+[tool.ruff.lint]
+select = ["I", "UP"]

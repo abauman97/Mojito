@@ -1,24 +1,23 @@
+from collections.abc import Awaitable, Mapping, Sequence
 from typing import (
     Any,
-    Callable,
-    Mapping,
-    Sequence,
-    Awaitable,
     AsyncContextManager,
-    Union,
+    Callable,
     Optional,
+    Union,
 )
-from starlette.applications import Starlette, AppType
+
+from starlette.applications import AppType, Starlette
 from starlette.middleware import Middleware
-from starlette.routing import BaseRoute
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.routing import BaseRoute
 from starlette.websockets import WebSocket
-from .globals import GlobalsMiddleware
-from .middleware.sessions import SessionMiddleware
-from .message_flash import MessageFlashMiddleware
-from .routing import AppRouter
 
+from .globals import GlobalsMiddleware
+from .message_flash import MessageFlashMiddleware
+from .middleware.sessions import SessionMiddleware
+from .routing import AppRouter
 
 RouteFunctionType = Callable[[Request], Union[Awaitable[Response], Response]]
 
@@ -74,8 +73,8 @@ class Mojito(Starlette):
     def route(
         self,
         path: str,
-        methods: list[str] | None = ["GET"],
-        name: str | None = None,
+        methods: Optional[list[str]] = ["GET"],
+        name: Optional[str] = None,
         include_in_schema: bool = True,
     ):
         return self.router.route(

@@ -3,9 +3,9 @@ from collections.abc import Awaitable, Callable
 from contextvars import ContextVar, copy_context
 from typing import Any
 
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 

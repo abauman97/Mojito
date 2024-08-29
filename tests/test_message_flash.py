@@ -1,4 +1,4 @@
-from mojito import Mojito, AppRouter, flash_message, get_flashed_messages, JSONResponse
+from mojito import AppRouter, JSONResponse, Mojito, flash_message, get_flashed_messages
 from mojito.testclient import TestClient
 
 app = Mojito()

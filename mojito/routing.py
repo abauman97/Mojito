@@ -1,14 +1,17 @@
-from typing import Any, Callable, Sequence, Awaitable, Union, Optional, List, Mapping
-from starlette.applications import P
-from starlette.middleware import Middleware, _MiddlewareClass  # type: ignore
-from starlette.routing import Route, Router, PARAM_REGEX, BaseRoute
-from starlette.requests import Request
-from starlette.responses import Response, HTMLResponse, RedirectResponse
-from starlette.background import BackgroundTask
-from . import helpers
-from .globals import g
-from .config import Config
 import inspect
+from collections.abc import Awaitable, Mapping, Sequence
+from typing import Any, Callable, List, Optional, Union
+
+from starlette.applications import P
+from starlette.background import BackgroundTask
+from starlette.middleware import Middleware, _MiddlewareClass  # type: ignore
+from starlette.requests import Request
+from starlette.responses import HTMLResponse, RedirectResponse, Response
+from starlette.routing import PARAM_REGEX, BaseRoute, Route, Router
+
+from . import helpers
+from .config import Config
+from .globals import g
 
 RouteFunctionType = Callable[[Request], Union[Awaitable[Response], Response]]
 
@@ -112,11 +115,9 @@ class AppRouter(Router):
         name: Optional[str] = None,
         include_in_schema: bool = True,
     ) -> Callable[[Callable[..., Any]], RouteFunctionType]:
-
         def decorator(
             func: Callable[..., Union[Awaitable[Any], Any]],
         ) -> RouteFunctionType:
-
             async def endpoint_function(request: Request):
                 """Creates a function that inputs the correct arguments to the func at runtime."""
                 kwargs = self._process_endpoint_args(request, path, func)

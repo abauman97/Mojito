@@ -1,14 +1,17 @@
 "Authentication and authorization handlers built off of sessions and scoped to the request to allow for database lookups"
+
 # A common need is to validate a session cookie and perform a database lookup to validate
 # the user. This is not a middlware so that the current request can be included in the handler functions
-from starlette.requests import Request
-from starlette.responses import RedirectResponse
-from starlette.types import ASGIApp, Scope, Send, Receive, Message
-from .globals import g
-from .config import Config
+import abc
 import hashlib
 import typing as t
-import abc
+
+from starlette.requests import Request
+from starlette.responses import RedirectResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from .config import Config
+from .globals import g
 
 
 class LoginRequiredMiddleware:
@@ -39,7 +42,7 @@ class LoginRequiredMiddleware:
             ):
                 # Skip for routes registered as login_not_required
                 return await send(message)
-            is_authenticated: bool | None = request.session.get("is_authenticated")
+            is_authenticated: t.Optional[bool] = request.session.get("is_authenticated")
             if not is_authenticated:
                 response = RedirectResponse(Config.LOGIN_URL, 302)
                 return await response(scope, receive, send)
@@ -76,7 +79,7 @@ class BaseAuth:
     @abc.abstractmethod
     async def authenticate(
         self, request: Request, username: str, password: str
-    ) -> tuple[bool, t.List[str]] | None:
+    ) -> t.Optional[tuple[bool, t.List[str]]]:
         """Method to authenticate the user based on the users username and password. Will
         be used by the password_login() function to authenticate the user.
 

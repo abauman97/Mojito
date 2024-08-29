@@ -1,5 +1,6 @@
-from mojito import Mojito, AppRouter, auth, Request
+from mojito import AppRouter, Mojito, Request, auth
 from mojito.testclient import TestClient
+
 from .main import PasswordAuth
 
 app = Mojito()
