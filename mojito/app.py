@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Mapping, Sequence
+from contextlib import AbstractAsyncContextManager
 from typing import (
     Any,
-    AsyncContextManager,
     Callable,
     Optional,
     Union,
@@ -23,6 +23,7 @@ RouteFunctionType = Callable[[Request], Union[Awaitable[Response], Response]]
 
 
 class Mojito(Starlette):
+
     def __init__(
         self: AppType,
         debug: bool = False,
@@ -43,8 +44,8 @@ class Mojito(Starlette):
         on_shutdown: Optional[Sequence[Callable[[], Any]]] = None,
         lifespan: Optional[
             Union[
-                Callable[[AppType], AsyncContextManager[None]],
-                Callable[[AppType], AsyncContextManager[Mapping[str, Any]]],
+                Callable[[AppType], AbstractAsyncContextManager[None]],
+                Callable[[AppType], AbstractAsyncContextManager[Mapping[str, Any]]],
             ]
         ] = None,
     ) -> None:

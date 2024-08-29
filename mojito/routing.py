@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Awaitable, Mapping, Sequence
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from starlette.applications import P
 from starlette.background import BackgroundTask
@@ -22,7 +22,7 @@ class AppRouter(Router):
         prefix: Optional[str] = None,
         name: Optional[str] = None,
         middleware: Optional[Sequence[Middleware]] = None,
-        routes: Optional[List[BaseRoute]] = None,
+        routes: Optional[list[BaseRoute]] = None,
     ) -> None:
         super().__init__(
             routes=routes,

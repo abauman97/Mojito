@@ -79,7 +79,7 @@ class BaseAuth:
     @abc.abstractmethod
     async def authenticate(
         self, request: Request, username: str, password: str
-    ) -> t.Optional[tuple[bool, t.List[str]]]:
+    ) -> t.Optional[tuple[bool, list[str]]]:
         """Method to authenticate the user based on the users username and password. Will
         be used by the password_login() function to authenticate the user.
 
@@ -100,10 +100,10 @@ class BaseAuth:
 
 
 class AuthConfig:
-    auth_handler: t.Optional[t.Type[BaseAuth]] = None
+    auth_handler: t.Optional[type[BaseAuth]] = None
 
 
-def add_auth_handler(handler: t.Type[BaseAuth]):
+def add_auth_handler(handler: type[BaseAuth]):
     AuthConfig.auth_handler = handler
 
 
