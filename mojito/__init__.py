@@ -1,5 +1,5 @@
-from .app import Mojito as Mojito, redirect_to as redirect_to
-from .routing import AppRouter as AppRouter
+from .app import Mojito as Mojito
+from .routing import AppRouter as AppRouter, redirect_to as redirect_to
 from .helpers import (
     get_flashed_messages as get_flashed_messages,
     flash_message as flash_message,

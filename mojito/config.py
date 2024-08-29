@@ -1,7 +1,4 @@
-from dataclasses import dataclass
-
-
-@dataclass
+# TODO - Load config from os if it exists
 class Config:
     SECRET_KEY: str = "poaiuvnepwoijsoxmkcpaoiu"
     MESSAGE_FLASH_COOKIE: str = "flash_messages"
