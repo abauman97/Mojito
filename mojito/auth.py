@@ -57,10 +57,6 @@ class BaseAuth:
     Subclasses must implement authorize() and authenticate() methods.
     """
 
-    @staticmethod
-    def hash_password(password: str):
-        return hashlib.sha256(password.encode()).hexdigest()
-
     @abc.abstractmethod
     async def authorize(self, scopes: list[str]) -> bool:
         """Method to check if the user has the required scopes
@@ -97,6 +93,10 @@ class BaseAuth:
             tuple[bool, t.List[str]] | None: (is_authenticated: bool, user_scopes: t.List[str])
         """
         raise NotImplementedError()
+
+
+def hash_password(password: str):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
 class AuthConfig:
