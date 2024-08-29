@@ -10,13 +10,12 @@ from typing import (
 )
 from starlette.applications import Starlette, AppType
 from starlette.middleware import Middleware
-from starlette.routing import BaseRoute, Mount
+from starlette.routing import BaseRoute
 from starlette.requests import Request
-from starlette.responses import Response, RedirectResponse
+from starlette.responses import Response
 from starlette.websockets import WebSocket
-from .globals import GlobalsMiddleware, g
+from .globals import GlobalsMiddleware
 from .middleware.sessions import SessionMiddleware
-from starlette.background import BackgroundTask
 from .message_flash import MessageFlashMiddleware
 from .routing import AppRouter
 
@@ -59,6 +58,7 @@ class Mojito(Starlette):
             on_shutdown,
             lifespan,
         )
+        self.router = AppRouter()
         self.add_middleware(GlobalsMiddleware)
         self.add_middleware(SessionMiddleware)
         self.add_middleware(MessageFlashMiddleware)
@@ -69,23 +69,15 @@ class Mojito(Starlette):
         Args:
             router (AppRouter): Instance of the AppRouter
         """
-        routes = [route for route in router.routes]
-        # Mount router as subapplication
-        self.routes.append(
-            Mount(path=router.prefix, routes=routes, middleware=router.middleware)
+        self.router.include_router(router)
+
+    def route(
+        self,
+        path: str,
+        methods: list[str] | None = ["GET"],
+        name: str | None = None,
+        include_in_schema: bool = True,
+    ):
+        return self.router.route(
+            path=path, methods=methods, name=name, include_in_schema=include_in_schema
         )
-        # for route in router.routes:
-        #     self.routes.append(route)
-
-
-def request() -> Request:
-    return g.request
-
-
-def redirect_to(
-    url: str,
-    status_code: int = 302,
-    headers: Optional[Mapping[str, str]] = None,
-    background: Optional[BackgroundTask] = None,
-):
-    return RedirectResponse(url, status_code, headers, background)
