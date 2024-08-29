@@ -48,7 +48,7 @@ class LoginRequiredMiddleware:
         await self.app(scope, receive, send_wrapper)
 
 
-class AuthBase:
+class BaseAuth:
     """Base class that all authentication methods should implement.
 
     Subclasses must implement authorize() and authenticate() methods.
@@ -97,10 +97,10 @@ class AuthBase:
 
 
 class AuthConfig:
-    auth_handler: t.Optional[t.Type[AuthBase]] = None
+    auth_handler: t.Optional[t.Type[BaseAuth]] = None
 
 
-def add_auth_handler(handler: t.Type[AuthBase]):
+def add_auth_handler(handler: t.Type[BaseAuth]):
     AuthConfig.auth_handler = handler
 
 

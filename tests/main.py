@@ -40,7 +40,7 @@ def protected_route():
     return "<p>protected</p>"
 
 
-class PasswordAuth(auth.AuthBase):
+class PasswordAuth(auth.BaseAuth):
     async def authorize(self, scopes: list[str]) -> bool:
         await sleep(0.5)
         return True
