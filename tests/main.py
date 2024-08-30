@@ -42,11 +42,11 @@ def protected_route():
 
 
 class PasswordAuth(auth.BaseAuth):
-    async def authorize(self, scopes: list[str]) -> bool:
+    async def authorize(self, request: Request, scopes: list[str]) -> bool:
         await sleep(0.5)
         return True
 
-    async def authenticate(self, request: auth.Request, username: str, password: str):
+    async def authenticate(self, request: Request, username: str, password: str):
         await sleep(0.5)
         return (True, ["admin"])
 

@@ -58,8 +58,9 @@ class BaseAuth:
     """
 
     @abc.abstractmethod
-    async def authorize(self, scopes: list[str]) -> bool:
-        """Method to check if the user has the required scopes
+    async def authorize(self, request: Request, scopes: list[str]) -> bool:
+        """Method to check if the user has the required scopes. The user must have all
+        scopes given to be valid.
 
         Args:
             scopes (list[str]): list of scopes to check check that the user has.
@@ -90,7 +91,7 @@ class BaseAuth:
             NotImplementedError: Method not implemented
 
         Returns:
-            tuple[bool, t.List[str]] | None: (is_authenticated: bool, user_scopes: t.List[str])
+            tuple[bool, list[str]] | None: (is_authenticated: bool, user_scopes: list[str])
         """
         raise NotImplementedError()
 
@@ -112,10 +113,9 @@ async def password_login(username: str, password: str):
     session object. Uses the
 
     Args:
-        username (str): _description_
-        password (str): _description_
+        username (str): The username to identify the user
+        password (str): The users plain text password. Will be compared to the hashed version in storage.
     """
-    # Use auth handler function to get the is_authenticated and scopes
     request: Request = g.request
     if not AuthConfig.auth_handler:
         raise NotImplementedError(
