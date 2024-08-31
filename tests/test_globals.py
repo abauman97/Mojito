@@ -11,7 +11,8 @@ async def get_and_set_g(request: Request, g_message: int):
     assert g.test_message == g_message
 
 async def get_g(i: int):
-    async with httpx.AsyncClient(app=app, base_url="http://test") as client:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         await client.get(f'/{i}')
 
 async def main():
