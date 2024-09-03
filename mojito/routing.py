@@ -8,6 +8,7 @@ from starlette.middleware import Middleware, _MiddlewareClass  # type: ignore
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.routing import PARAM_REGEX, BaseRoute, Route, Router
+from starlette.datastructures import URL
 
 from . import helpers
 from .config import Config
@@ -154,7 +155,7 @@ class AppRouter(Router):
 
 
 def redirect_to(
-    url: str,
+    url: Union[str, URL],
     status_code: int = 302,
     headers: Optional[Mapping[str, str]] = None,
     background: Optional[BackgroundTask] = None,
