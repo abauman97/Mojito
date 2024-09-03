@@ -14,8 +14,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-standard = ["uvicorn[standard]~=0.12", "httpx>=0.23.0"]
-all = ["uvicorn[standard]~=0.12", "httpx>=0.23.0"]
+standard = ["uvicorn[standard]~=0.12", "httpx>=0.23.0", "pydantic>2.1.0"]
+all = ["uvicorn[standard]~=0.12", "httpx>=0.23.0", "pydantic>2.1.0"]
 
 [build-system]
 requires = ["pdm-backend"]
