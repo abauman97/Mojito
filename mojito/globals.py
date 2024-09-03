@@ -75,14 +75,7 @@ async def globals_middleware_dispatch(
         return call_next(request)
 
     return await ctx.run(_call_next)
-
-
-class GlobalsMiddleware(BaseHTTPMiddleware):  # noqa
-    """Middleware to setup the globals context using globals_middleware_dispatch()."""
-
-    def __init__(self, app: ASGIApp) -> None:
-        super().__init__(app, globals_middleware_dispatch)
-
+        
 
 g = GlobalContextVar()
 """
@@ -93,3 +86,12 @@ Usage:
 
     print(g.foo) -> "Foo"
 """
+
+class GlobalsMiddleware(BaseHTTPMiddleware):  # noqa
+    """Middleware to setup the globals context using globals_middleware_dispatch().
+    
+    Should be the first middleware processed in the application. Sets g.request to the
+    current request."""
+
+    def __init__(self, app: ASGIApp) -> None:
+        super().__init__(app, globals_middleware_dispatch)
