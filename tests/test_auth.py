@@ -5,9 +5,10 @@ from .main import PasswordAuth
 
 app = Mojito()
 protected_router = AppRouter()
-protected_router.add_middleware(auth.LoginRequiredMiddleware)
+protected_router.add_middleware(auth.AuthRequiredMiddleware)
+
 client = TestClient(app)
-auth.add_auth_handler(PasswordAuth)
+auth.set_auth_handler(PasswordAuth)
 
 
 @protected_router.route("/login", methods=["GET", "POST"])
@@ -36,3 +37,94 @@ def test_route_protection():
     result = client.get("/protected")
     assert result.status_code == 200
     assert result.text == "accessed"
+
+scope_protected_router = AppRouter()
+scope_protected_router.add_middleware(auth.AuthRequiredMiddleware, require_scopes=['admin'])
+
+@scope_protected_router.route('/scope_protected_admin')
+async def scope_protected_admin():
+    return "scope protected admin"
+
+invalid_scope_protected_router = AppRouter()
+invalid_scope_protected_router.add_middleware(auth.AuthRequiredMiddleware, require_scopes=['nope'])
+
+@invalid_scope_protected_router.route('/invalid_scope_protected')
+async def invalid_scope_protected():
+    return 'Invalid route'
+
+app.include_router(scope_protected_router)
+app.include_router(invalid_scope_protected_router)
+
+def test_valid_scope_protected_router():
+    client.cookies.clear()
+    result = client.get('/scope_protected_admin')
+    assert result.status_code == 200
+    assert result.text == "login page"
+    result = client.post('/login')
+    assert result.status_code == 200
+    result = client.get('/scope_protected_admin')
+    assert result.status_code == 200
+    assert result.text == 'scope protected admin'
+
+def test_invalid_scope_protected_router():
+    client.cookies.clear()
+    result = client.get('/invalid_scope_protected')
+    assert result.status_code == 200
+    assert result.text == "login page"
+    result = client.post('/login')
+    assert result.status_code == 200
+    result = client.get('/invalid_scope_protected')
+    assert result.status_code == 200
+    assert result.text == 'login page'
+
+
+@app.route('/decorator_protected')
+@auth.require_auth()
+def decorator_protected_route():
+    return 'decorator protected'
+
+def test_decorator_protected():
+    client.cookies.clear() # Clear cookies
+    result = client.get('/decorator_protected')
+    assert result.status_code == 200 # Redirect to login page
+    assert result.text != "decorator protected"
+    assert result.text == "login page"
+    result = client.post('/login')
+    assert result.status_code == 200
+    result = client.get("/decorator_protected")
+    assert result.status_code == 200
+    assert result.text == "decorator protected"
+
+
+@app.route('/decorator_protected_with_scope')
+@auth.require_auth(scopes=["admin"])
+def decorator_protected_with_scopes():
+    return 'decorator protected with scope'
+
+@app.route('/decorator_protected_missing_scope')
+@auth.require_auth(scopes=["nope"])
+def decorator_protected_missing_scope():
+    return 'decorator protected missing scope'
+
+def test_decorator_protected_with_scope():
+    client.cookies.clear() # Clear cookies
+    result = client.get('/decorator_protected_with_scope')
+    assert result.status_code == 200 # Redirect to login page
+    assert result.text != "decorator protected with scope"
+    assert result.text == "login page"
+    result = client.post('/login')
+    assert result.status_code == 200
+    result = client.get("/decorator_protected_with_scope")
+    assert result.text == "decorator protected with scope"
+
+def test_decorator_protected_missing_scope():
+    client.cookies.clear() # Clear cookies
+    result = client.get('/decorator_protected_missing_scope')
+    assert result.status_code == 200 # Redirect to login page
+    assert result.text != "decorator protected missing scope"
+    assert result.text == "login page"
+    result = client.post('/login')
+    assert result.status_code == 200
+    result = client.get("/decorator_protected_missing_scope")
+    assert result.text != "decorator protected missing scope"
+    assert result.text == "login page"

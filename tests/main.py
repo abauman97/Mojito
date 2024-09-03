@@ -33,7 +33,7 @@ async def id_route_with_query_params(id: int, query_param_1: str, request: Reque
 
 # TEST PROTECTED ROUTES
 protected_subrouter = AppRouter("/protected")
-protected_subrouter.add_middleware(auth.LoginRequiredMiddleware)
+protected_subrouter.add_middleware(auth.AuthRequiredMiddleware)
 
 
 @protected_subrouter.route("/")
@@ -58,7 +58,7 @@ def app_route():
 
 main_router.include_router(protected_subrouter)
 
-auth.add_auth_handler(PasswordAuth)
+auth.set_auth_handler(PasswordAuth)
 
 app.include_router(main_router)
 
