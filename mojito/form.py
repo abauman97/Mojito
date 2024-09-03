@@ -7,8 +7,8 @@ except ModuleNotFoundError:
     raise ModuleNotFoundError("Form requires pydantic being installed. \npip install pydantic")
 
 
-PydanticModel = TypeVar('PydanticModel', bound=type[BaseModel])
-async def Form(request: Request, model: PydanticModel) -> PydanticModel:
+PydanticModel = TypeVar('PydanticModel', bound=BaseModel)
+async def Form(request: Request, model: type[PydanticModel]) -> PydanticModel:
     """Read form data from the request and validate it's content against a Pydantic model 
     and return the valid Pydantic model. Extra data in the form is ignored and not passed into the
     Pydantic model.
