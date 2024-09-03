@@ -32,3 +32,4 @@ from .routing import AppRouter as AppRouter
 from .routing import redirect_to as redirect_to
 from .staticfiles import StaticFiles as StaticFiles
 from .templating import Jinja2Templates as Jinja2Templates
+from .form import Form as Form
