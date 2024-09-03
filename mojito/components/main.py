@@ -1,5 +1,5 @@
 from typing import Callable, Any, Optional
-
+from mojito.routing import AppRouter, Route
 
 class HTML(str):
     # HTML type. Should validate that it is valid html on init
@@ -24,44 +24,27 @@ Swaps/refreshes can be triggered using regular HTMX and component_url() global f
 inside of a 
 """
 
-
-class MoTemplates:
-    components: dict[str, Callable[..., HTML]]
+class MoComponent:
+    components: dict[str, Callable[..., HTML]] = {}
     config: dict[str, Any]
+    router = AppRouter('/mo-component', name="components")
 
-    def __init__(self) -> None:
-        self.components = {}
-
-    def register_component(self):
+    def register_component(        
+        self,
+        methods: Optional[list[str]] = ["GET"],
+        include_in_schema: bool = True):
         "Should be a wrapper that allows for defining and registering a component."
-
-        # Components should be protected and treated just like routes.
         def wrapper(func: Callable[..., HTML]):
-            # Register a component and add it to the routes
             self.components[func.__name__] = func
-
-            return func
-
+            
+            @self.router.route(path="/" + func.__name__, methods=methods, name=func.__name__, include_in_schema=include_in_schema)
+            def inner_func(*args: Any, **kwargs: dict[str, Any]):
+                return func(*args, **kwargs)
+            return inner_func
         return wrapper
+
 
     def component_url(name: str) -> str:
         # Returns the route to the component
         # Used for replacing the component like hx-swap={{ component_url('some_component') }}
         pass
-
-    def component_function(
-        self, name: str, id: Optional[str] = None, **kwargs: dict[str, Any]
-    ):
-        """Looks up and renders a component by name. Component is given the id if it will
-        be the target of any actions. The **kwargs are parameters passed to the function
-        """
-        pass
-
-
-templates = MoTemplates()
-
-
-# Template
-@templates.register_component()
-def base_template() -> HTML:
-    pass
