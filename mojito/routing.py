@@ -4,11 +4,12 @@ from typing import Any, Callable, Optional, Union
 
 from starlette.applications import P
 from starlette.background import BackgroundTask
+from starlette.datastructures import URL
 from starlette.middleware import Middleware, _MiddlewareClass  # type: ignore
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.routing import PARAM_REGEX, BaseRoute, Route, Router
-from starlette.datastructures import URL
+from starlette.types import AppType, Lifespan
 
 from . import helpers
 from .config import Config
@@ -24,10 +25,9 @@ class AppRouter(Router):
         name: Optional[str] = None,
         middleware: Optional[Sequence[Middleware]] = None,
         routes: Optional[list[BaseRoute]] = None,
+        lifespan: Optional[Lifespan[AppType]] = None,
     ) -> None:
-        super().__init__(
-            routes=routes,
-        )
+        super().__init__(routes=routes, lifespan=lifespan)
         self.middleware = [] if middleware is None else list(middleware)
         self.prefix = prefix or ""
         self.routes: list[BaseRoute] = []

@@ -58,7 +58,7 @@ class Mojito(Starlette):
             on_shutdown,
             lifespan,
         )
-        self.router = AppRouter()
+        self.router = AppRouter(lifespan=lifespan)
         self.add_middleware(GlobalsMiddleware)
         self.add_middleware(SessionMiddleware)
         self.add_middleware(MessageFlashMiddleware)
