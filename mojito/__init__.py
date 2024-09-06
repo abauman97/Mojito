@@ -1,3 +1,7 @@
+"""Mojito framework. Fresh, fast, and simple web framework for building HTML-first websites"""
+
+__version__ = "0.1.0a3"
+
 from .app import Mojito as Mojito
 from .form import Form as Form
 from .globals import g as g
