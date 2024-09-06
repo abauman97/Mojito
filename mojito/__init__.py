@@ -1,4 +1,5 @@
 from .app import Mojito as Mojito
+from .form import Form as Form
 from .globals import g as g
 from .helpers import (
     flash_message as flash_message,
@@ -32,4 +33,3 @@ from .routing import AppRouter as AppRouter
 from .routing import redirect_to as redirect_to
 from .staticfiles import StaticFiles as StaticFiles
 from .templating import Jinja2Templates as Jinja2Templates
-from .form import Form as Form

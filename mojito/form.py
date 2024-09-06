@@ -1,17 +1,24 @@
 from typing import TypeVar
+
 from .requests import Request
 
 try:
     from pydantic import BaseModel
 except ModuleNotFoundError:
-    raise ModuleNotFoundError("Form requires pydantic being installed. \npip install pydantic")
+    raise ModuleNotFoundError(
+        "Form requires pydantic being installed. \npip install pydantic"
+    )
 
 
-PydanticModel = TypeVar('PydanticModel', bound=BaseModel)
+PydanticModel = TypeVar("PydanticModel", bound=BaseModel)
+
+
 async def Form(request: Request, model: type[PydanticModel]) -> PydanticModel:
-    """Read form data from the request and validate it's content against a Pydantic model 
+    """Read form data from the request and validate it's content against a Pydantic model
     and return the valid Pydantic model. Extra data in the form is ignored and not passed into the
-    Pydantic model.
+    Pydantic model. This does not work for processing files. You must use the request directly to get and read
+    from files before using this function to read and validate the other form fields. See
+    https://www.starlette.io/requests/#request-files for working with files.
 
     Args:
         request (Request): Mojito Request object
