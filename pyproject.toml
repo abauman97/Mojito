@@ -1,6 +1,6 @@
 [project]
 name = "mojito-web"
-version = "0.1.0-beta.1"
+version = "0.1.0-alpha.2"
 description = "Lightweight ASGI framework based on Starlette."
 authors = [{ name = "Austin Bauman", email = "abauman97@protonmail.com" }]
 requires-python = ">=3.9"
@@ -12,6 +12,13 @@ dependencies = [
     "itsdangerous~=2.2",
     "python-multipart>=0.0.9",
 ]
+
+[project.urls]
+Homepage = "https://github.com/abauman97/Mojito"
+Documentation = "https://github.com/abauman97/Mojito"
+Repository = "https://github.com/abauman97/Mojito.git"
+Issues = "https://github.com/abauman97/Mojito/issues"
+# Changelog = "https://github.com/abauman97/Mojito/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 standard = ["uvicorn[standard]~=0.12", "httpx>=0.23.0", "pydantic>2.1.0"]
