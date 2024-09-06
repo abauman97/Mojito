@@ -1,6 +1,8 @@
-from mojito import Mojito, g, Request
 import asyncio
+
 import httpx
+
+from mojito import Mojito, Request, g
 
 app = Mojito()
 
