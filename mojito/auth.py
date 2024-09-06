@@ -3,9 +3,9 @@
 # A common need is to validate a session cookie and perform a database lookup to validate
 # the user. This is not a middlware so that the current request can be included in the handler functions
 import abc
+import functools
 import hashlib
 import typing as t
-import functools
 
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
@@ -14,14 +14,16 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from .config import Config
 from .globals import g
 
+
 class _RequestSession:
     "Names of data set on the request.session"
+
     IS_AUTHENTICATED = "is_authenticated"
     AUTH_SCOPES = "auth_scopes"
 
 
 class AuthRequiredMiddleware:
-    """Redirect to login_url if session is not authenticated or if user does not have the required auth scopes. 
+    """Redirect to login_url if session is not authenticated or if user does not have the required auth scopes.
     Can be applied at the app level or on individual routers.
 
     Will ignore the Config.LOGIN_URL path to prevent infinite redirects.
@@ -33,7 +35,12 @@ class AuthRequiredMiddleware:
             to access the requested resource.
     """
 
-    def __init__(self, app: ASGIApp, ignore_routes: list[str] = [], require_scopes: t.Optional[list[str]] = None) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        ignore_routes: list[str] = [],
+        require_scopes: t.Optional[list[str]] = None,
+    ) -> None:
         self.app = app
         self.ignore_routes = ignore_routes
         self.require_scopes = require_scopes
@@ -51,7 +58,9 @@ class AuthRequiredMiddleware:
             ):
                 # Skip for routes registered as login_not_required
                 return await send(message)
-            is_authenticated: t.Optional[bool] = request.session.get(_RequestSession.IS_AUTHENTICATED)
+            is_authenticated: t.Optional[bool] = request.session.get(
+                _RequestSession.IS_AUTHENTICATED
+            )
             if not is_authenticated:
                 response = RedirectResponse(Config.LOGIN_URL, 302)
                 return await response(scope, receive, send)
@@ -66,7 +75,9 @@ class AuthRequiredMiddleware:
         await self.app(scope, receive, send_wrapper)
 
 
-def require_auth(scopes: t.Optional[list[str]] = None, redirect_url: t.Optional[str] = None):
+def require_auth(
+    scopes: t.Optional[list[str]] = None, redirect_url: t.Optional[str] = None
+):
     """Decorator to require that the user is authenticated and optionally check that the user has
     the required auth scopes before accessing the resource. Redirect to the configured
     login_url if one is set, or to redirect_url if one is given.
@@ -76,10 +87,10 @@ def require_auth(scopes: t.Optional[list[str]] = None, redirect_url: t.Optional[
         redirect_url (Optional[list[str]]): Redirect to this url rather than the configured
             login_url.
     """
-    # This decorator must be applied below the route definition decorator so that it will wrap the 
+    # This decorator must be applied below the route definition decorator so that it will wrap the
     # endpoint function before the route decorator will. This decorator will pass all arg straight
     # through after verifying authentication or else it will return a redirect response.
-    
+
     def wrapper(func: t.Callable[..., t.Any]):
         @functools.wraps(func)
         def requires_auth_function(*args: t.Any, **kwargs: dict[str, t.Any]):
@@ -94,7 +105,9 @@ def require_auth(scopes: t.Optional[list[str]] = None, redirect_url: t.Optional[
                     if not required_scope in user_scopes:
                         return RedirectResponse(REDIRECT_URL, 302)
             return func(*args, **kwargs)
+
         return requires_auth_function
+
     return wrapper
 
 
@@ -156,8 +169,8 @@ def hash_password(password: str) -> str:
 
 
 class AuthConfig:
-    """Global configuration options for auth functionality.
-    """
+    """Global configuration options for auth functionality."""
+
     auth_handler: t.Optional[type[BaseAuth]] = None
 
 
@@ -194,4 +207,3 @@ async def password_login(username: str, password: str):
     request.session[_RequestSession.IS_AUTHENTICATED] = is_authenticated
     request.session[_RequestSession.AUTH_SCOPES] = result[1]
     return True if is_authenticated else False
-

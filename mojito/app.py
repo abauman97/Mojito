@@ -23,7 +23,6 @@ RouteFunctionType = Callable[[Request], Union[Awaitable[Response], Response]]
 
 
 class Mojito(Starlette):
-
     def __init__(
         self: AppType,
         debug: bool = False,
