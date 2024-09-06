@@ -1,6 +1,6 @@
 [project]
 name = "mojito-web"
-version = "0.1.0-alpha.2"
+dynamic = ["version"]
 description = "Lightweight ASGI framework based on Starlette."
 authors = [{ name = "Austin Bauman", email = "abauman97@protonmail.com" }]
 requires-python = ">=3.9"
