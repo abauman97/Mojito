@@ -31,7 +31,7 @@ class AuthRequiredMiddleware:
     Args:
         ignore_routes (Optional[list[str]]): defaults to None. paths of routes to ignore validation on like '/login'. Path should be relative
             and match the Request.url.path value when the route is called.
-        required_scopes (Optional[list[str]]) defaults to None. List of scopes the user must have in order to be authorized
+        require_scopes (Optional[list[str]]): defaults to None. List of scopes the user must have in order to be authorized
             to access the requested resource.
     """
 
@@ -207,3 +207,10 @@ async def password_login(username: str, password: str):
     request.session[_RequestSession.IS_AUTHENTICATED] = is_authenticated
     request.session[_RequestSession.AUTH_SCOPES] = result[1]
     return True if is_authenticated else False
+
+
+def logout(redirect_url: t.Optional[str] = None):
+    """Expire the current users session."""
+    request: Request = g.request
+    assert request, "unable to access g.request"
+    request.session.clear()
