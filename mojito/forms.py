@@ -19,7 +19,7 @@ PydanticModel = TypeVar("PydanticModel", bound=BaseModel)
 
 
 @asynccontextmanager
-async def Form(request: Request, model: type[PydanticModel]):
+async def FormManager(request: Request, model: type[PydanticModel]):
     """Read form data from the request and validate it's content against a Pydantic model
     and return the valid Pydantic model. Extra data in the form is ignored and not passed into the
     Pydantic model. This does not work for processing files. You must use the request directly to get and read
@@ -33,12 +33,20 @@ async def Form(request: Request, model: type[PydanticModel]):
     Returns:
         PydanticModel: The validated Pydantic model
 
+
     Raises:
         ValidationError: Pydantic validation error
     """
     async with request.form() as form:
         valid_model = model.model_validate(dict(form.items()))
         yield valid_model  # Yield result while in context of request.form()
+
+
+async def Form(request: Request, model: type[PydanticModel]):
+    "Validates the form fields"
+    async with request.form() as form:
+        valid_model = model.model_validate(dict(form.items()))
+        return valid_model
 
 
 class UploadFile(StarletteUploadFile):

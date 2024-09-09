@@ -3,7 +3,6 @@
 __version__ = "0.1.0a3"
 
 from .app import Mojito as Mojito
-from .form import Form as Form
 from .globals import g as g
 from .helpers import (
     flash_message as flash_message,
