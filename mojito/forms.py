@@ -19,7 +19,12 @@ PydanticModel = TypeVar("PydanticModel", bound=BaseModel)
 
 
 @asynccontextmanager
-async def Form(request: Request, model: type[PydanticModel]):
+async def FormManager(
+    request: Request,
+    model: type[PydanticModel],
+    max_files: int = 1000,
+    max_fields: int = 1000,
+):
     """Read form data from the request and validate it's content against a Pydantic model
     and return the valid Pydantic model. Extra data in the form is ignored and not passed into the
     Pydantic model. This does not work for processing files. You must use the request directly to get and read
@@ -29,16 +34,31 @@ async def Form(request: Request, model: type[PydanticModel]):
     Args:
         request (Request): Mojito Request object
         model (PydanticModel): The Pydantic model to validate against
+        max_files (int): The maximum number of files for Starlette to allow
+        max_fields (int): The maximum number of fields for Starlette to allow
 
-    Returns:
+    Yields:
         PydanticModel: The validated Pydantic model
+
 
     Raises:
         ValidationError: Pydantic validation error
     """
-    async with request.form() as form:
+    async with request.form(max_files=max_files, max_fields=max_fields) as form:
         valid_model = model.model_validate(dict(form.items()))
         yield valid_model  # Yield result while in context of request.form()
+
+
+async def Form(
+    request: Request,
+    model: type[PydanticModel],
+    max_files: int = 1000,
+    max_fields: int = 1000,
+):
+    "Validates the form fields against the model"
+    async with request.form(max_files=max_files, max_fields=max_fields) as form:
+        valid_model = model.model_validate(dict(form.items()))
+        return valid_model
 
 
 class UploadFile(StarletteUploadFile):

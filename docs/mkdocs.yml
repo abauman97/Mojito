@@ -24,6 +24,9 @@ theme:
   features:
     - content.code.copy
 
+plugins:
+- mkdocstrings
+
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true

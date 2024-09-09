@@ -7,8 +7,8 @@ from pydantic import (
     ValidationError,
 )
 
-from mojito import Form, JSONResponse, Mojito, Request, Response
-from mojito.form import UploadFile
+from mojito import JSONResponse, Mojito, Request, Response
+from mojito.forms import Form, FormManager, UploadFile
 from mojito.testclient import TestClient
 
 app = Mojito()
@@ -24,8 +24,8 @@ class FormTest(BaseModel):
 @app.route("/", methods=["POST"])
 async def process_form(request: Request):
     try:
-        async with Form(request, FormTest) as form:
-            return JSONResponse(form.model_dump())
+        form = await Form(request, FormTest)
+        return JSONResponse(form.model_dump())
     except ValidationError as e:
         return Response(e.__str__(), status_code=500)
 
@@ -80,7 +80,7 @@ class FormWithFileTest(BaseModel):
 
 @app.route("/upload_file", methods=["POST"])
 async def process_upload_file_form(request: Request):
-    async with Form(request, FormWithFileTest) as form:
+    async with FormManager(request, FormWithFileTest) as form:
         file_content = await form.file_1.read()
         return file_content.decode()
 
