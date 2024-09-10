@@ -1,7 +1,6 @@
-"Authentication and authorization handlers built off of sessions and scoped to the request to allow for database lookups"
+"""Authentication and authorization utilities to reduce the boilerplate required to implement basic session
+based authentication."""
 
-# A common need is to validate a session cookie and perform a database lookup to validate
-# the user. This is not a middlware so that the current request can be included in the handler functions
 import abc
 import functools
 import hashlib
