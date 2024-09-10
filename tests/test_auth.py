@@ -143,3 +143,56 @@ def test_decorator_protected_missing_scope():
     result = client.get("/decorator_protected_missing_scope")
     assert result.text != "decorator protected missing scope"
     assert result.text == "login page"
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    auth.logout()
+
+
+def test_logout():
+    result = client.post("/login")
+    assert result.status_code == 200
+    result = client.get("/protected")
+    assert result.status_code == 200
+    result = client.post("/logout")
+    assert result.status_code == 200
+    result = client.get("/protected")
+    assert result.status_code == 200
+    assert result.text == "login page"
+
+
+scope_admin_protected_router = AppRouter()
+scope_admin_protected_router.add_middleware(
+    auth.AuthRequiredMiddleware, require_scopes=["admin"]
+)
+
+
+@scope_admin_protected_router.route("/scope_admin_protected_route")
+def scope_admin_protected_route():
+    return "scope_admin_protected_route"
+
+
+scope_invalid_protected_router = AppRouter()
+scope_invalid_protected_router.add_middleware(
+    auth.AuthRequiredMiddleware, require_scopes=["invalid"]
+)
+
+
+@scope_invalid_protected_router.route("/scope_invalid_protected_route")
+def scope_invalid_protected_route():
+    return "scope_invalid_protected_route"
+
+
+app.include_router(scope_admin_protected_router)
+app.include_router(scope_invalid_protected_router)
+
+
+def test_auth_required_middleware_scopes():
+    result = client.post("/login")
+    assert result.status_code == 200
+    result = client.get("/scope_admin_protected_route")
+    assert result.status_code == 200
+    result = client.get("/scope_invalid_protected_route")
+    assert result.status_code == 200
+    assert result.text == "login page"  # Redirected to login page

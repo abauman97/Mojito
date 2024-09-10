@@ -48,7 +48,12 @@ class PasswordAuth(auth.BaseAuth):
 
     async def authenticate(self, request: Request, username: str, password: str):
         await sleep(0.5)
-        return (True, ["admin"])
+        auth_data = auth.AuthSessionData(
+            is_authenticated=True,
+            user={"id": 1, "name": "Test User", "email": "test@email.com"},
+            user_scopes=["admin"],
+        )
+        return auth_data
 
 
 @app.route("/app-route")

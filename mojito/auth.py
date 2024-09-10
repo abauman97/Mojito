@@ -15,13 +15,6 @@ from .config import Config
 from .globals import g
 
 
-class _RequestSession:
-    "Names of data set on the request.session"
-
-    IS_AUTHENTICATED = "is_authenticated"
-    AUTH_SCOPES = "auth_scopes"
-
-
 class AuthRequiredMiddleware:
     """Redirect to login_url if session is not authenticated or if user does not have the required auth scopes.
     Can be applied at the app level or on individual routers.
@@ -31,7 +24,7 @@ class AuthRequiredMiddleware:
     Args:
         ignore_routes (Optional[list[str]]): defaults to None. paths of routes to ignore validation on like '/login'. Path should be relative
             and match the Request.url.path value when the route is called.
-        required_scopes (Optional[list[str]]) defaults to None. List of scopes the user must have in order to be authorized
+        require_scopes (Optional[list[str]]): defaults to None. List of scopes the user must have in order to be authorized
             to access the requested resource.
     """
 
@@ -58,14 +51,12 @@ class AuthRequiredMiddleware:
             ):
                 # Skip for routes registered as login_not_required
                 return await send(message)
-            is_authenticated: t.Optional[bool] = request.session.get(
-                _RequestSession.IS_AUTHENTICATED
-            )
+            is_authenticated: t.Optional[bool] = request.session.get("is_authenticated")
             if not is_authenticated:
                 response = RedirectResponse(Config.LOGIN_URL, 302)
                 return await response(scope, receive, send)
             # Check that the user has the required scopes
-            user_scopes = request.session.get(_RequestSession.AUTH_SCOPES, [])
+            user_scopes = request.session.get("user_scopes", [])
             for required_scope in self.require_scopes if self.require_scopes else []:
                 if not required_scope in user_scopes:
                     response = RedirectResponse(Config.LOGIN_URL, 302)
@@ -97,10 +88,10 @@ def require_auth(
             request = g.request
             assert isinstance(request, Request)
             REDIRECT_URL = redirect_url if redirect_url else Config.LOGIN_URL
-            if not request.session.get(_RequestSession.IS_AUTHENTICATED, False):
+            if not request.session.get("is_authenticated", False):
                 return RedirectResponse(REDIRECT_URL, 302)
             if scopes:
-                user_scopes = request.session.get(_RequestSession.AUTH_SCOPES, [])
+                user_scopes = request.session.get("user_scopes", [])
                 for required_scope in scopes:
                     if not required_scope in user_scopes:
                         return RedirectResponse(REDIRECT_URL, 302)
@@ -109,6 +100,17 @@ def require_auth(
         return requires_auth_function
 
     return wrapper
+
+
+class AuthSessionData(t.TypedDict):
+    is_authenticated: bool
+    user: dict[str, t.Any]
+    """The user object. May contain any information about the user, such as name and user_id that
+    you want to be available anywhere with access to the request. Don't store any sensitive
+     information like passwords as all of this will be encoded and stored on the session but may
+     be decoded by anyone who inspects the cookie."""
+    user_scopes: t.Optional[list[str]]
+    "user_scopes are used to authorize the user. Think of them as roles or permissions."
 
 
 class BaseAuth:
@@ -136,7 +138,7 @@ class BaseAuth:
     @abc.abstractmethod
     async def authenticate(
         self, request: Request, username: str, password: str
-    ) -> t.Optional[tuple[bool, list[str]]]:
+    ) -> t.Optional[AuthSessionData]:
         """Method to authenticate the user based on the users username and password. Will
         be used by the password_login() function to authenticate the user.
 
@@ -144,14 +146,14 @@ class BaseAuth:
             request (Request): Mojito/Starlette request object
             username (str): The users username
             password (str): The users password in plain text. Stored passwords should be
-                hashed and compared to check validity. This base class provides hash_password()
-                static method to easily compare the hashed vs the given password.
+                hashed and compared to check validity. This module provides the hash_password()
+                function to easily compare the hashed vs the given password.
 
         Raises:
             NotImplementedError: Method not implemented
 
         Returns:
-            tuple[bool, list[str]] | None: (is_authenticated: bool, user_scopes: list[str])
+            AuthSessionData | None: The auth data stored on the session.
         """
         raise NotImplementedError()
 
@@ -186,7 +188,9 @@ def set_auth_handler(handler: type[BaseAuth]):
 
 async def password_login(username: str, password: str):
     """Login user based on username and password. Authenticates user and sets data on the
-    session object. Uses the
+    session object. Uses the `authenticate` function from AuthHandler configured on the
+    AuthConfig.auth_handler class. Use the function `set_auth_handler` to configure an
+    AuthHandler.
 
     Args:
         username (str): The username to identify the user
@@ -203,7 +207,12 @@ async def password_login(username: str, password: str):
     )
     if not result:
         return False
-    is_authenticated = result[0]
-    request.session[_RequestSession.IS_AUTHENTICATED] = is_authenticated
-    request.session[_RequestSession.AUTH_SCOPES] = result[1]
-    return True if is_authenticated else False
+    request.session.update(result)
+    return result.get("is_authenticated", False)
+
+
+def logout():
+    """Expire the current user session."""
+    request: Request = g.request
+    assert request, "unable to access g.request"
+    request.session.clear()
