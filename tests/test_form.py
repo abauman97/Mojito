@@ -64,6 +64,13 @@ async def process_form(request: Request):
             },
             500,
         ),
+        (
+            {
+                "field_1": "field one",
+                "field_2": "",  # Missing field_2. Sent as empty string from form input
+            },
+            500,
+        ),
     ],
 )
 def test_form_processing(form_data: dict[str, str], status: int):

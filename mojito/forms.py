@@ -18,6 +18,16 @@ except ModuleNotFoundError:
 PydanticModel = TypeVar("PydanticModel", bound=BaseModel)
 
 
+def _check_empty_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
+    # Empty form inputs are sent as "" empty strings. Check and delete them from the
+    # form response before pydantic validates it
+    included_items = inputs.copy()
+    for key, val in inputs.items():
+        if isinstance(val, str) and not len(val) > 0:
+            del included_items[key]
+    return included_items
+
+
 @asynccontextmanager
 async def FormManager(
     request: Request,
@@ -45,7 +55,8 @@ async def FormManager(
         ValidationError: Pydantic validation error
     """
     async with request.form(max_files=max_files, max_fields=max_fields) as form:
-        valid_model = model.model_validate(dict(form.items()))
+        form_inputs = dict(form.items())
+        valid_model = model.model_validate(_check_empty_inputs(form_inputs))
         yield valid_model  # Yield result while in context of request.form()
 
 
@@ -57,7 +68,8 @@ async def Form(
 ):
     "Validates the form fields against the model"
     async with request.form(max_files=max_files, max_fields=max_fields) as form:
-        valid_model = model.model_validate(dict(form.items()))
+        form_inputs = dict(form.items())
+        valid_model = model.model_validate(_check_empty_inputs(form_inputs))
         return valid_model
 
 
