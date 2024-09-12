@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import json
 import typing
 from base64 import b64decode, b64encode
@@ -12,6 +13,9 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .. import config
 
+if typing.TYPE_CHECKING:
+    from ..auth import AuthSessionData
+
 
 class SessionMiddleware:
     def __init__(
@@ -19,9 +23,9 @@ class SessionMiddleware:
         app: ASGIApp,
         secret_key: str | Secret = config.Config.SECRET_KEY,
         session_cookie: str = "session",
-        max_age: int | None = 14 * 24 * 60 * 60,  # 14 days, in seconds
+        max_age: int | None = config.Config.SESSION_EXPIRES,
         path: str = "/",
-        same_site: typing.Literal["lax", "strict", "none"] = "lax",
+        same_site: typing.Literal["lax", "strict", "none"] = "strict",
         https_only: bool = False,
         domain: str | None = None,
     ) -> None:
@@ -47,8 +51,19 @@ class SessionMiddleware:
         if self.session_cookie in connection.cookies:
             data = connection.cookies[self.session_cookie].encode("utf-8")
             try:
-                data = self.signer.unsign(data, max_age=self.max_age)
-                scope["session"] = json.loads(b64decode(data))
+                data_bytes, timestamp = self.signer.unsign(
+                    data, max_age=self.max_age, return_timestamp=True
+                )
+                data_decoded = b64decode(data_bytes)
+                json_data: AuthSessionData = json.loads(data_decoded)
+                reauthenticate_after = timestamp + datetime.timedelta(
+                    seconds=config.Config.SESSION_REVALIDATE_AFTER
+                )
+                if datetime.datetime.now(datetime.timezone.utc) > reauthenticate_after:
+                    json_data["is_authenticated"] = (
+                        False  # Force reauthentication if session needs revalidated
+                    )
+                scope["session"] = json_data
                 initial_session_was_empty = False
             except BadSignature:
                 scope["session"] = {}
