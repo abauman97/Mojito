@@ -1,7 +1,6 @@
 """Authentication and authorization utilities to reduce the boilerplate required to implement basic session
 based authentication."""
 
-import abc
 import functools
 import hashlib
 import typing as t
@@ -14,8 +13,9 @@ from .config import Config
 from .globals import g
 
 
-class AuthRequiredMiddleware:
-    """Redirect to login_url if session is not authenticated or if user does not have the required auth scopes.
+class AuthMiddleware:
+    """Uses sessions to authorize and authenticate users with requests.
+    Redirect to login_url if session is not authenticated or if user does not have the required auth scopes.
     Can be applied at the app level or on individual routers.
 
     Will ignore the Config.LOGIN_URL path to prevent infinite redirects.
@@ -31,11 +31,11 @@ class AuthRequiredMiddleware:
         self,
         app: ASGIApp,
         ignore_routes: list[str] = [],
-        require_scopes: t.Optional[list[str]] = None,
+        allow_permissions: list[str] = [],
     ) -> None:
         self.app = app
         self.ignore_routes = ignore_routes
-        self.require_scopes = require_scopes
+        self.allow_permissions = allow_permissions
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -55,9 +55,9 @@ class AuthRequiredMiddleware:
                 response = RedirectResponse(Config.LOGIN_URL, 302)
                 return await response(scope, receive, send)
             # Check that the user has the required scopes
-            user_scopes = request.session.get("user_scopes", [])
-            for required_scope in self.require_scopes if self.require_scopes else []:
-                if not required_scope in user_scopes:
+            permissions = request.session.get("permissions", [])
+            for allow_permission in self.allow_permissions:
+                if not allow_permission in permissions:
                     response = RedirectResponse(Config.LOGIN_URL, 302)
                     return await response(scope, receive, send)
             await send(message)
@@ -66,7 +66,7 @@ class AuthRequiredMiddleware:
 
 
 def require_auth(
-    scopes: t.Optional[list[str]] = None, redirect_url: t.Optional[str] = None
+    allow_permissions: list[str] = [], redirect_url: t.Optional[str] = None
 ):
     """Decorator to require that the user is authenticated and optionally check that the user has
     the required auth scopes before accessing the resource. Redirect to the configured
@@ -89,11 +89,10 @@ def require_auth(
             REDIRECT_URL = redirect_url if redirect_url else Config.LOGIN_URL
             if not request.session.get("is_authenticated", False):
                 return RedirectResponse(REDIRECT_URL, 302)
-            if scopes:
-                user_scopes = request.session.get("user_scopes", [])
-                for required_scope in scopes:
-                    if not required_scope in user_scopes:
-                        return RedirectResponse(REDIRECT_URL, 302)
+            permissions = request.session.get("permissions", [])
+            for allow_permission in allow_permissions:
+                if not allow_permission in permissions:
+                    return RedirectResponse(REDIRECT_URL, 302)
             return func(*args, **kwargs)
 
         return requires_auth_function
@@ -108,45 +107,22 @@ class AuthSessionData(t.TypedDict):
     you want to be available anywhere with access to the request. Don't store any sensitive
      information like passwords as all of this will be encoded and stored on the session but may
      be decoded by anyone who inspects the cookie."""
-    user_scopes: t.Optional[list[str]]
-    "user_scopes are used to authorize the user. Think of them as roles or permissions."
+    permissions: list[str]
+    "permissions are used to authorize the user. Think of them as scopes in a JWT."
 
 
-class BaseAuth:
-    """Base class that all authentication methods should implement.
+class BaseAuth(t.Protocol):
+    """Base class that all authentication methods should implement."""
 
-    Subclasses must implement authorize() and authenticate() methods.
-    """
-
-    @abc.abstractmethod
-    async def authorize(self, request: Request, scopes: list[str]) -> bool:
-        """Method to check if the user has the required scopes. The user must have all
-        scopes given to be valid.
-
-        Args:
-            scopes (list[str]): list of scopes to check check that the user has.
-
-        Raises:
-            NotImplementedError: Method not implemented.
-
-        Returns:
-            bool: User is authorized
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
     async def authenticate(
-        self, request: Request, username: str, password: str
+        self, request: Request, **kwargs: dict[str, t.Any]
     ) -> t.Optional[AuthSessionData]:
         """Method to authenticate the user based on the users username and password. Will
         be used by the password_login() function to authenticate the user.
 
         Args:
             request (Request): Mojito/Starlette request object
-            username (str): The users username
-            password (str): The users password in plain text. Stored passwords should be
-                hashed and compared to check validity. This module provides the hash_password()
-                function to easily compare the hashed vs the given password.
+            **kwargs (P.kwargs): The credentials to use in authorization as keyword only arguments
 
         Raises:
             NotImplementedError: Method not implemented
@@ -169,49 +145,19 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-class AuthConfig:
-    """Global configuration options for auth functionality."""
-
-    auth_handler: t.Optional[type[BaseAuth]] = None
-
-
-def set_auth_handler(handler: type[BaseAuth]):
-    """Set and auth handler to the AuthConfig.auth_handler setting. Only one auth handler can
-    be set at a time. Setting an auth handler will override any set previously.
-
-    Args:
-        handler (type[BaseAuth]): The auth handler class that implements the BaseAuth class
-    """
-    AuthConfig.auth_handler = handler
-
-
-async def password_login(username: str, password: str):
-    """Login user based on username and password. Authenticates user and sets data on the
-    session object. Uses the `authenticate` function from AuthHandler configured on the
-    AuthConfig.auth_handler class. Use the function `set_auth_handler` to configure an
-    AuthHandler.
-
-    Args:
-        username (str): The username to identify the user
-        password (str): The users plain text password. Will be compared to the hashed version in storage.
-    """
-    request: Request = g.request
-    if not AuthConfig.auth_handler:
-        raise NotImplementedError(
-            "an auth handler must be defined to use password_login"
-        )
-    auth = AuthConfig.auth_handler()  # Get Auth class from config
-    result = await auth.authenticate(
-        request=request, username=username, password=password
-    )
+async def login(
+    request: Request,
+    auth_handler: type[BaseAuth],
+    **kwargs: t.Any,
+):
+    handler = auth_handler()
+    result = await handler.authenticate(request, **kwargs)
     if not result:
         return False
     request.session.update(result)
-    return result.get("is_authenticated", False)
+    return result
 
 
-def logout():
+def logout(request: Request):
     """Expire the current user session."""
-    request: Request = g.request
-    assert request, "unable to access g.request"
     request.session.clear()

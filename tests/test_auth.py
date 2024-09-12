@@ -5,16 +5,17 @@ from .main import PasswordAuth
 
 app = Mojito()
 protected_router = AppRouter()
-protected_router.add_middleware(auth.AuthRequiredMiddleware)
+protected_router.add_middleware(auth.AuthMiddleware)
 
 client = TestClient(app)
-auth.set_auth_handler(PasswordAuth)
 
 
 @protected_router.route("/login", methods=["GET", "POST"])
 async def protected_login_route(request: Request):
     if request.method == "POST":
-        await auth.password_login("username", "password")
+        await auth.login(
+            request, PasswordAuth, username="username", password="password"
+        )
         return "login success"
     return "login page"
 
@@ -40,9 +41,7 @@ def test_route_protection():
 
 
 scope_protected_router = AppRouter()
-scope_protected_router.add_middleware(
-    auth.AuthRequiredMiddleware, require_scopes=["admin"]
-)
+scope_protected_router.add_middleware(auth.AuthMiddleware, allow_permissions=["admin"])
 
 
 @scope_protected_router.route("/scope_protected_admin")
@@ -52,7 +51,7 @@ async def scope_protected_admin():
 
 invalid_scope_protected_router = AppRouter()
 invalid_scope_protected_router.add_middleware(
-    auth.AuthRequiredMiddleware, require_scopes=["nope"]
+    auth.AuthMiddleware, allow_permissions=["nope"]
 )
 
 
@@ -109,13 +108,13 @@ def test_decorator_protected():
 
 
 @app.route("/decorator_protected_with_scope")
-@auth.require_auth(scopes=["admin"])
+@auth.require_auth(allow_permissions=["admin"])
 def decorator_protected_with_scopes():
     return "decorator protected with scope"
 
 
 @app.route("/decorator_protected_missing_scope")
-@auth.require_auth(scopes=["nope"])
+@auth.require_auth(allow_permissions=["nope"])
 def decorator_protected_missing_scope():
     return "decorator protected missing scope"
 
@@ -146,8 +145,8 @@ def test_decorator_protected_missing_scope():
 
 
 @app.route("/logout", methods=["POST"])
-def logout():
-    auth.logout()
+def logout(request: Request):
+    auth.logout(request)
 
 
 def test_logout():
@@ -164,7 +163,7 @@ def test_logout():
 
 scope_admin_protected_router = AppRouter()
 scope_admin_protected_router.add_middleware(
-    auth.AuthRequiredMiddleware, require_scopes=["admin"]
+    auth.AuthMiddleware, allow_permissions=["admin"]
 )
 
 
@@ -175,7 +174,7 @@ def scope_admin_protected_route():
 
 scope_invalid_protected_router = AppRouter()
 scope_invalid_protected_router.add_middleware(
-    auth.AuthRequiredMiddleware, require_scopes=["invalid"]
+    auth.AuthMiddleware, allow_permissions=["invalid"]
 )
 
 

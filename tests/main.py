@@ -33,7 +33,7 @@ async def id_route_with_query_params(id: int, query_param_1: str, request: Reque
 
 # TEST PROTECTED ROUTES
 protected_subrouter = AppRouter("/protected")
-protected_subrouter.add_middleware(auth.AuthRequiredMiddleware)
+protected_subrouter.add_middleware(auth.AuthMiddleware)
 
 
 @protected_subrouter.route("/")
@@ -42,16 +42,14 @@ def protected_route():
 
 
 class PasswordAuth(auth.BaseAuth):
-    async def authorize(self, request: Request, scopes: list[str]) -> bool:
-        await sleep(0.5)
-        return True
+    "Authenticate with username and password"
 
-    async def authenticate(self, request: Request, username: str, password: str):
+    async def authenticate(self, request: Request, **kwargs: dict[str, str]):
         await sleep(0.5)
         auth_data = auth.AuthSessionData(
             is_authenticated=True,
             user={"id": 1, "name": "Test User", "email": "test@email.com"},
-            user_scopes=["admin"],
+            permissions=["admin"],
         )
         return auth_data
 
@@ -62,8 +60,6 @@ def app_route():
 
 
 main_router.include_router(protected_subrouter)
-
-auth.set_auth_handler(PasswordAuth)
 
 app.include_router(main_router)
 
