@@ -41,4 +41,6 @@ nav:
   - Features: features.md
   - Getting Started: getting_started.md
   - Routing: routing.md
+  - Auth: auth.md
+  - Forms: forms.md
   - Message Flashing: message_flashing.md
