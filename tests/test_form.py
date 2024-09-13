@@ -99,3 +99,25 @@ def test_form_file_processing():
     result = client.post("/upload_file", files={"file_1": file})
     assert result.status_code == 200
     assert result.text == file_content.decode()
+
+
+class FormWithMultipleInputs(BaseModel):
+    roles: list[str]
+    other_input: str
+
+
+@app.route("/checkboxes", methods=["POST"])
+async def combine_checkboxes(request: Request):
+    form = await Form(request, FormWithMultipleInputs)
+    print(form.model_dump())
+    return form.model_dump()
+
+
+def test_form_combine_inputs():
+    client.post(
+        "/checkboxes",
+        data={
+            "roles": ["role 1", "role 2", "role 3"],
+            "other_input": "input value",
+        },
+    )

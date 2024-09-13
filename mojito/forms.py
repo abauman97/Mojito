@@ -3,6 +3,7 @@ from typing import Any, TypeVar
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
+from starlette.datastructures import FormData
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from .requests import Request
@@ -18,14 +19,28 @@ except ModuleNotFoundError:
 PydanticModel = TypeVar("PydanticModel", bound=BaseModel)
 
 
-def _check_empty_inputs(inputs: dict[str, Any]) -> dict[str, Any]:
-    # Empty form inputs are sent as "" empty strings. Check and delete them from the
-    # form response before pydantic validates it
-    included_items = inputs.copy()
-    for key, val in inputs.items():
-        if isinstance(val, str) and not len(val) > 0:
-            del included_items[key]
-    return included_items
+def _process_form(form: FormData) -> dict[str, Any]:
+    # Preprocesses the form data before pydantic does any validation.
+    # 1. Empty form inputs are sent as "" empty strings. Check and delete them from the
+    #   form response before pydantic validates it
+    # 2. Combine fields with the same name into a list of the fields values
+    items = form.multi_items()
+    processed_items: dict[str, Any] = {}
+    for item_name, item_value in items:
+        # Build dict to return
+        if isinstance(item_value, str) and not len(item_value) > 0:
+            continue  # Skip this value if it is an empty string
+        if processed_items.get(item_name):
+            # Item with that name already exists. Make or append to list.
+            current_value = processed_items[item_name]
+            if isinstance(current_value, list):
+                processed_items[item_name].append(item_value)
+            else:
+                processed_items[item_name] = [current_value, item_value]
+            continue
+        processed_items[item_name] = item_value
+
+    return processed_items
 
 
 @asynccontextmanager
@@ -55,8 +70,7 @@ async def FormManager(
         ValidationError: Pydantic validation error
     """
     async with request.form(max_files=max_files, max_fields=max_fields) as form:
-        form_inputs = dict(form.items())
-        valid_model = model.model_validate(_check_empty_inputs(form_inputs))
+        valid_model = model.model_validate(_process_form(form))
         yield valid_model  # Yield result while in context of request.form()
 
 
@@ -68,8 +82,7 @@ async def Form(
 ):
     "Validates the form fields against the model"
     async with request.form(max_files=max_files, max_fields=max_fields) as form:
-        form_inputs = dict(form.items())
-        valid_model = model.model_validate(_check_empty_inputs(form_inputs))
+        valid_model = model.model_validate(_process_form(form))
         return valid_model
 
 
