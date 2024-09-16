@@ -113,6 +113,3 @@ app.include_router(admin.router)
 def index():
 	return "<h1>Hello, World!</h1>
 ```
-
-# API
-::: mojito.routing.AppRouter.add_middleware
