@@ -4,7 +4,7 @@ dynamic = ["version"]
 description = "Lightweight ASGI framework based on Starlette."
 authors = [{ name = "Austin Bauman", email = "abauman97@protonmail.com" }]
 requires-python = ">=3.9"
-readme = "README.md"
+readme = "./docs/index.md"
 license = { text = "MIT" }
 dependencies = [
     "starlette>=0.37.2,<0.39.0",
@@ -15,7 +15,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/abauman97/Mojito"
-Documentation = "https://github.com/abauman97/Mojito"
+Documentation = "https://abauman97.github.io/Mojito/"
 Repository = "https://github.com/abauman97/Mojito.git"
 Issues = "https://github.com/abauman97/Mojito/issues"
 # Changelog = "https://github.com/abauman97/Mojito/blob/main/CHANGELOG.md"
