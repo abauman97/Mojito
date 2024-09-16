@@ -1,11 +1,7 @@
 import os
 
 import pytest
-from pydantic import (
-    BaseModel,
-    Field,
-    ValidationError,
-)
+from pydantic import BaseModel, Field, ValidationError
 
 from mojito import JSONResponse, Mojito, Request, Response
 from mojito.forms import Form, FormManager, UploadFile
@@ -30,7 +26,7 @@ async def process_form(request: Request):
         return Response(e.__str__(), status_code=500)
 
 
-@pytest.mark.parametrize(
+@pytest.mark.parametrize(  # type: ignore
     ("form_data", "status"),
     [
         (
@@ -102,7 +98,7 @@ def test_form_file_processing():
 
 
 class FormWithMultipleInputs(BaseModel):
-    roles: list[str]
+    roles: list[str] = []
     other_input: str
 
 
@@ -113,11 +109,23 @@ async def combine_checkboxes(request: Request):
     return form.model_dump()
 
 
-def test_form_combine_inputs():
-    client.post(
+@pytest.mark.parametrize(
+    ("form_data", "status"),
+    [
+        ({"roles": ["role 1", "role 2", "role 3"], "other_input": "input value"}, 200),
+        (
+            {"roles": "role 1", "other_input": "input value"},
+            200,  # single role coerced to list
+        ),
+        (
+            {"other_input": "input value"},
+            200,  # role set as empty list
+        ),
+    ],
+)
+def test_form_combine_inputs(form_data: dict[str, str], status: int):
+    result = client.post(
         "/checkboxes",
-        data={
-            "roles": ["role 1", "role 2", "role 3"],
-            "other_input": "input value",
-        },
+        data=form_data,
     )
+    assert result.status_code == status

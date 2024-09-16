@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import Any, TypeVar
+from typing import Any, TypeVar, get_origin
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
@@ -12,31 +12,37 @@ try:
     from pydantic import BaseModel
 except ModuleNotFoundError:
     raise ModuleNotFoundError(
-        "Form requires pydantic being installed. \npip install pydantic"
+        "form module requires pydantic being installed. \npip install pydantic"
     )
 
 
 PydanticModel = TypeVar("PydanticModel", bound=BaseModel)
 
 
-def _process_form(form: FormData) -> dict[str, Any]:
+def _process_form(form: FormData, model: type[PydanticModel]) -> dict[str, Any]:
     # Preprocesses the form data before pydantic does any validation.
     # 1. Empty form inputs are sent as "" empty strings. Check and delete them from the
     #   form response before pydantic validates it
     # 2. Combine fields with the same name into a list of the fields values
     items = form.multi_items()
+    fields = model.model_fields
     processed_items: dict[str, Any] = {}
     for item_name, item_value in items:
         # Build dict to return
+        pydantic_field = fields.get(item_name)
         if isinstance(item_value, str) and not len(item_value) > 0:
             continue  # Skip this value if it is an empty string
         if processed_items.get(item_name):
-            # Item with that name already exists. Make or append to list.
             current_value = processed_items[item_name]
+            # Item with that name already exists. Make or append to list.
             if isinstance(current_value, list):
                 processed_items[item_name].append(item_value)
             else:
                 processed_items[item_name] = [current_value, item_value]
+            continue
+        elif pydantic_field and get_origin(pydantic_field.annotation) is list:
+            # Field doesn't exist yet and is defined as a list in the Pydantic model
+            processed_items[item_name] = [item_value]
             continue
         processed_items[item_name] = item_value
 
@@ -70,7 +76,7 @@ async def FormManager(
         ValidationError: Pydantic validation error
     """
     async with request.form(max_files=max_files, max_fields=max_fields) as form:
-        valid_model = model.model_validate(_process_form(form))
+        valid_model = model.model_validate(_process_form(form, model))
         yield valid_model  # Yield result while in context of request.form()
 
 
@@ -82,7 +88,7 @@ async def Form(
 ):
     "Validates the form fields against the model"
     async with request.form(max_files=max_files, max_fields=max_fields) as form:
-        valid_model = model.model_validate(_process_form(form))
+        valid_model = model.model_validate(_process_form(form, model))
         return valid_model
 
 
