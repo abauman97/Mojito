@@ -35,11 +35,11 @@ async def create_user(request: Request):
         <div id="permissions">
             <div>
                 <label for="readPermission">Read</label>
-                <input type="checkbox" value="read" id="readPermission">
+                <input type="checkbox" name="permissions" value="read" id="readPermission">
             </div>
             <div>
                 <label for="writePermission">Write</label>
-                <input type="checkbox" value="write" id="writePermission">
+                <input type="checkbox" name="permissions" value="write" id="writePermission">
             </div>
         </div>
         <button type="submit">Submit</button>
@@ -47,7 +47,7 @@ async def create_user(request: Request):
     """
 ```
 
-When this form is submitted the `Form` function will first preprocess the form data to combine fields like checkboxes into a list and remove fields submitted as empty strings before sending them to be validated by Pydantic.
+When this form is submitted the `Form` function will first preprocess the form data to combine fields with the same name, like the checkboxes above, into a list and remove fields submitted as empty strings before sending them to be validated by Pydantic. 
 
 ## Forms with files
 The `FormManager` is an asynccontextmanager providing the same functionality as form except it can be used within a context manager to maintain the open form data, alllowing for reading and working with uploaded files. This can also be used when you want to keep working with Starlettes `request.form()` data directly after data validation.
