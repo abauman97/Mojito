@@ -62,13 +62,13 @@ class Mojito(Starlette):
         self.add_middleware(UserSessionMiddleware)
         self.add_middleware(MessageFlashMiddleware)
 
-    def include_router(self, router: AppRouter):
+    def include_router(self, router: AppRouter) -> None:
         """Mounts all the routers routes under the application with the prefix.
 
         Args:
             router (AppRouter): Instance of the AppRouter
         """
-        self.router.include_router(router)
+        self.router.include_router(router)  # type:ignore [attr-defined]
 
     def route(
         self,
@@ -76,7 +76,7 @@ class Mojito(Starlette):
         methods: Optional[list[str]] = ["GET"],
         name: Optional[str] = None,
         include_in_schema: bool = True,
-    ):
+    ) -> Callable[..., RouteFunctionType]:
         return self.router.route(
             path=path, methods=methods, name=name, include_in_schema=include_in_schema
         )

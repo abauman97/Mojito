@@ -73,7 +73,7 @@ class _AuthConfig:
     auth_handlers: dict[str, type[BaseAuth]] = {}
 
     @staticmethod
-    def get_default_handler():
+    def get_default_handler() -> str:
         if not _AuthConfig.default_handler:
             raise NotImplementedError(
                 "must set a default auth handler using set_auth_handler()"
@@ -81,7 +81,7 @@ class _AuthConfig:
         return _AuthConfig.default_handler
 
 
-def include_auth_handler(auth_handler: type[BaseAuth], primary: bool = False):
+def include_auth_handler(auth_handler: type[BaseAuth], primary: bool = False) -> None:
     """Include an auth handler for use. If this is the first or only auth handler included, it
     will be set as primary regardless of the value of the primary argument.
 
@@ -195,16 +195,16 @@ def requires(
         # Handle async request/response functions.
         @functools.wraps(func)
         async def wrapper(
-            request: Request, *args: _P.args, **kwargs: _P.kwargs
+            request: t.Union[Request, t.Any], *args: _P.args, **kwargs: _P.kwargs
         ) -> t.Any:
-            if not isinstance(request, Request):  # type: ignore
+            if not isinstance(request, Request):
                 raise Exception(
                     "The Request must be the first argument to the function when using the `@requires` decorator"
                 )
             if not await _check_session_auth(request, scopes_list):
                 REDIRECT_URL = redirect_url if redirect_url else Config.LOGIN_URL
                 return RedirectResponse(REDIRECT_URL, 302)
-            if isinstance(func, t.Awaitable):  # type: ignore
+            if isinstance(func, t.Awaitable):  # type: ignore [unused-ignore]
                 return await func(request, *args, **kwargs)
             else:
                 return func(request, *args, **kwargs)  # type: ignore
@@ -231,7 +231,7 @@ async def login(
     auth_handler: t.Optional[type[BaseAuth]] = None,
     persist_session: bool = True,
     **kwargs: t.Any,
-):
+) -> t.Optional[AuthSessionData]:
     """Login user and create an authenticated session.
 
     Args:
@@ -257,6 +257,6 @@ async def login(
     return result
 
 
-def logout(request: Request):
+def logout(request: Request) -> None:
     """Expire the current user session."""
     request.user.clear()
