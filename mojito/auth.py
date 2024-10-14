@@ -25,8 +25,8 @@ class AuthSessionData(t.TypedDict):
     auth_handler: t.Optional[str]
     'The name of the auth handler class used to authenticate the user. Ex: "PasswordAuth"'
     user_id: t.Any
-    user: dict[str, t.Any]
-    """The user object. May contain any metadata about the user, such as name and user_id that
+    data: dict[str, t.Any]
+    """The user data dict. May contain any additional data about the user, such as name and tenant_id that
     you want to be available anywhere with access to the request. Don't store any sensitive
     information like passwords as all of this will be encoded and stored on the user session but may
     be decoded by anyone who inspects the cookie."""
@@ -102,7 +102,7 @@ async def _check_session_auth(request: Request, allowed_permissions: list[str]) 
         is_authenticated=request.user.get("is_authenticated", False),
         auth_handler=request.user.get("auth_handler", _AuthConfig.default_handler),
         user_id=request.user.get("user_id"),
-        user=request.user.get("user", {}),
+        data=request.user.get("user", {}),
         permissions=request.user.get("permissions", []),
     )
     if not auth_session_data["is_authenticated"]:

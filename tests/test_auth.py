@@ -33,7 +33,7 @@ class PasswordAuth(auth.BaseAuth):
             is_authenticated=True,
             auth_handler="PasswordAuth",
             user_id=user["id"],
-            user=dict(user),
+            data=dict(user),
             permissions=["admin"],
         )
         return auth_data
@@ -51,7 +51,7 @@ class PasswordAuth(auth.BaseAuth):
             is_authenticated=True,
             auth_handler="PasswordAuth",
             user_id=user["id"],
-            user=dict(user),
+            data=dict(user),
             permissions=["admin"],
         )
 
@@ -78,7 +78,7 @@ class SuperuserPasswordAuth(auth.BaseAuth):
             is_authenticated=True,
             auth_handler="SuperuserPasswordAuth",
             user_id=user["id"],
-            user=dict(user),
+            data=dict(user),
             permissions=["superuser"],
         )
         return auth_data
@@ -96,7 +96,7 @@ class SuperuserPasswordAuth(auth.BaseAuth):
             is_authenticated=True,
             auth_handler="SuperuserPasswordAuth",
             user_id=user["id"],
-            user=dict(user),
+            data=dict(user),
             permissions=["superuser"],
         )
 
