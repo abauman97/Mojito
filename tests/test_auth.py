@@ -1,8 +1,9 @@
-from mojito import AppRouter, Mojito, Request, auth
+from mojito import AppRouter, Mojito, Request, auth, config
 from mojito.testclient import TestClient
 
 from .db import get_db
 
+config.Config.SUPERUSER_PERMISSION_NAME = "superuser"
 app = Mojito()
 protected_router = AppRouter()
 protected_router.add_middleware(auth.AuthMiddleware)
@@ -55,7 +56,53 @@ class PasswordAuth(auth.BaseAuth):
         )
 
 
+class SuperuserPasswordAuth(auth.BaseAuth):
+    "Authenticate with username and password. Applies superuser role as only permission"
+
+    async def authenticate(self, request: Request, **kwargs: dict[str, str]):
+        email: str = kwargs.get("username")  # type:ignore
+        password: str = kwargs.get("password")  # type:ignore
+        assert email
+        assert password
+        async with get_db() as db:
+            user = await (
+                await db.execute(f"SELECT * FROM users where email = '{email}'")
+            ).fetchone()
+        if not user:
+            raise ValueError("No user found in database")
+        if not auth.hash_password(password) == user["password"]:
+            return None
+        user_dict = dict(user)
+        del user_dict["password"]
+        auth_data = auth.AuthSessionData(
+            is_authenticated=True,
+            auth_handler="SuperuserPasswordAuth",
+            user_id=user["id"],
+            user=dict(user),
+            permissions=["superuser"],
+        )
+        return auth_data
+
+    async def get_user(self, user_id: int) -> auth.AuthSessionData:
+        async with get_db() as db:
+            user = await (
+                await db.execute(
+                    f"SELECT id, name, email, is_active FROM users where id = {user_id}"
+                )
+            ).fetchone()
+        if not user:
+            raise ValueError("No user found in database")
+        return auth.AuthSessionData(
+            is_authenticated=True,
+            auth_handler="SuperuserPasswordAuth",
+            user_id=user["id"],
+            user=dict(user),
+            permissions=["superuser"],
+        )
+
+
 auth.include_auth_handler(PasswordAuth, primary=True)
+auth.include_auth_handler(SuperuserPasswordAuth)
 
 
 class TokenAuth(auth.BaseAuth):
@@ -76,10 +123,15 @@ auth.include_auth_handler(TokenAuth)
 
 
 @protected_router.route("/login", methods=["GET", "POST"])
-async def protected_login_route(request: Request):
+async def protected_login_route(request: Request, as_superuser: bool = False):
     if request.method == "POST":
-        await auth.login(request, username="test@email.com", password="password")
-        return "login success"
+        await auth.login(
+            request,
+            SuperuserPasswordAuth if as_superuser else PasswordAuth,
+            username="test@email.com",
+            password="password",
+        )
+        return f"logged in with {'SuperuserPasswordAuth' if as_superuser else 'PasswordAuth'}"
     return "login page"
 
 
@@ -175,8 +227,8 @@ def test_invalid_scope_protected_router():
 
 
 @app.route("/decorator_protected")
-@auth.require_auth()
-def decorator_protected_route():
+@auth.requires()
+def decorator_protected_route(request: Request):
     return "decorator protected"
 
 
@@ -194,14 +246,14 @@ def test_decorator_protected():
 
 
 @app.route("/decorator_protected_with_scope")
-@auth.require_auth(allow_permissions=["admin"])
-def decorator_protected_with_scopes():
+@auth.requires("admin")
+def decorator_protected_with_scopes(request: Request):
     return "decorator protected with scope"
 
 
 @app.route("/decorator_protected_missing_scope")
-@auth.require_auth(allow_permissions=["nope"])
-def decorator_protected_missing_scope():
+@auth.requires(["nope"])
+def decorator_protected_missing_scope(request: Request, id: int):
     return "decorator protected missing scope"
 
 
@@ -245,6 +297,21 @@ def test_logout():
     result = client.get("/protected")
     assert result.status_code == 200
     assert result.text == "login page"
+
+
+@app.route("/superuser")
+@auth.requires("nope")
+def superuser_scope(request: Request):
+    return "superuser"
+
+
+def test_superuser_scope():
+    result = client.post("/login", params={"as_superuser": True})
+    assert result.status_code == 200
+    assert result.text == "logged in with SuperuserPasswordAuth"
+    result = client.get("/superuser")
+    assert result.status_code == 200
+    assert result.text == "superuser"
 
 
 scope_admin_protected_router = AppRouter()

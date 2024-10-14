@@ -16,7 +16,7 @@ from starlette.websockets import WebSocket
 
 from .globals import GlobalsMiddleware
 from .message_flash import MessageFlashMiddleware
-from .middleware.sessions import SessionMiddleware
+from .middleware.user_sessions import UserSessionMiddleware
 from .routing import AppRouter
 
 RouteFunctionType = Callable[[Request], Union[Awaitable[Response], Response]]
@@ -59,7 +59,7 @@ class Mojito(Starlette):
         )
         self.router = AppRouter(lifespan=lifespan)
         self.add_middleware(GlobalsMiddleware)
-        self.add_middleware(SessionMiddleware)
+        self.add_middleware(UserSessionMiddleware)
         self.add_middleware(MessageFlashMiddleware)
 
     def include_router(self, router: AppRouter):

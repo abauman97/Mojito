@@ -84,3 +84,24 @@ The `AuthMiddleware` class will require authentication and authorization to all 
 
 ## `require_auth` decorator
 The `require_auth` decorator provides protection only to the routes it's applied to. This must be applied before, i.e. below, the route decorator so that no matter how the route function is called, the auth process will be applied.
+
+
+# Logging in
+Logging in is as simple as calling `auth.login()` with the correct kwargs for the backend. Using our PasswordAuth backend we would authenticate like so:
+```py title="src/main.py"
+@app.route("/login", methods=["GET", "POST"])
+async def protected_login_route(request: Request, as_superuser: bool = False):
+    if request.method == "POST":
+        await auth.login(
+            request,
+            username="test@email.com",
+            password="password",
+        )
+        return "logged in with PasswordAuth"
+    return "login page"
+```
+As you can see in the `auth.login()` function we don't have to specify the auth_handler (backend) if we are using the primary backend.
+
+
+# Accessing user data returned by the authentication backend
+The `auth.AuthSessionData` you returned from the Authentication Backend is stored on each request in the `Request.user` attribute and can be accessed anywhere you can access the request.
