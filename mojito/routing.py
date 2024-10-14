@@ -127,10 +127,10 @@ class AppRouter(Router):
                 # Ensures the function has a Response return type.
                 response = func(**kwargs)
                 if isinstance(response, Awaitable):
-                    response = await response
+                    response = await response  # type: ignore
                 if not isinstance(response, Response):
                     # Wrap response in default HTMLResponse
-                    response = HTMLResponse(str(response))
+                    response = HTMLResponse(str(response))  # type: ignore
 
                 # PROCESS MESSAGE FLASHING FOR NEXT REQUEST
                 if g.next_flash_messages:
