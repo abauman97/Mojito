@@ -5,7 +5,10 @@ from typing import Any, Callable, Optional, Union
 from starlette.applications import P
 from starlette.background import BackgroundTask
 from starlette.datastructures import URL
-from starlette.middleware import Middleware, _MiddlewareClass  # type: ignore
+from starlette.middleware import (
+    Middleware,
+    _MiddlewareClass,  # type: ignore [unused-ignore]
+)
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse, Response
 from starlette.routing import PARAM_REGEX, BaseRoute, Route, Router
@@ -33,7 +36,7 @@ class AppRouter(Router):
         self.routes: list[BaseRoute] = []
         self.name = name if name else ""
 
-    def include_router(self, router: "AppRouter"):
+    def include_router(self, router: "AppRouter") -> None:
         for route in router.routes:
             self.routes.append(route)
 
@@ -91,7 +94,7 @@ class AppRouter(Router):
         path_params = [p[0] for p in path_params_tuple]  # Extract just param name
         kwargs: dict[str, Any] = {}
         for arg_name, arg_type in arg_specs.annotations.items():
-            arg_value: Any | None = None
+            arg_value: Optional[Any] = None
             if arg_name in path_params:
                 # Arguments in path params
                 arg_value = request.path_params.get(arg_name)
@@ -119,19 +122,19 @@ class AppRouter(Router):
         def decorator(
             func: Callable[..., Union[Awaitable[Any], Any]],
         ) -> RouteFunctionType:
-            async def endpoint_function(request: Request):
+            async def endpoint_function(request: Request) -> Response:
                 """Creates a function that inputs the correct arguments to the func at runtime."""
                 kwargs = self._process_endpoint_args(request, path, func)
                 g.request = request
 
                 # Ensures the function has a Response return type.
-                response = func(**kwargs)
-                if isinstance(response, Awaitable):
-                    response = await response  # type: ignore
-                if not isinstance(response, Response):
+                original_response: Any = func(**kwargs)
+                if isinstance(original_response, Awaitable):
+                    original_response = await original_response
+                if not isinstance(original_response, Response):
                     # Wrap response in default HTMLResponse
-                    response = HTMLResponse(str(response))  # type: ignore
-
+                    original_response = HTMLResponse(str(original_response))
+                response: Response = original_response
                 # PROCESS MESSAGE FLASHING FOR NEXT REQUEST
                 if g.next_flash_messages:
                     response.set_cookie(
@@ -159,5 +162,5 @@ def redirect_to(
     status_code: int = 302,
     headers: Optional[Mapping[str, str]] = None,
     background: Optional[BackgroundTask] = None,
-):
+) -> RedirectResponse:
     return RedirectResponse(url, status_code, headers, background)

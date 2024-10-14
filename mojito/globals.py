@@ -65,7 +65,7 @@ class GlobalContextVar:
 
 async def globals_middleware_dispatch(
     request: Request,
-    call_next: Callable[..., Any],
+    call_next: Callable[..., Awaitable[Response]],
 ) -> Response:
     """Dispatch the request in a new context to allow globals to be used."""
 

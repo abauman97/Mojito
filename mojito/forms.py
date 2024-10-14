@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any, TypeVar, get_origin
 
@@ -55,7 +56,7 @@ async def FormManager(
     model: type[PydanticModel],
     max_files: int = 1000,
     max_fields: int = 1000,
-):
+) -> AsyncGenerator[PydanticModel, Any]:
     """Read form data from the request and validate it's content against a Pydantic model
     and return the valid Pydantic model. Extra data in the form is ignored and not passed into the
     Pydantic model. This does not work for processing files. You must use the request directly to get and read
@@ -85,7 +86,7 @@ async def Form(
     model: type[PydanticModel],
     max_files: int = 1000,
     max_fields: int = 1000,
-):
+) -> PydanticModel:
     "Validates the form fields against the model"
     async with request.form(max_files=max_files, max_fields=max_fields) as form:
         valid_model = model.model_validate(_process_form(form, model))
