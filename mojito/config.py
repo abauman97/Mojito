@@ -1,4 +1,3 @@
-# TODO - Load config from os if it exists
 import os
 from typing import Optional
 
@@ -21,12 +20,14 @@ class Config:
     
     Defaults to `mo_user_session`
     """
-    USER_SESSION_EXPIRES: int = int(os.getenv("SESSION_EXPIRES", 60 * 60 * 24 * 7))
+    USER_SESSION_EXPIRES: int = int(os.getenv("USER_SESSION_EXPIRES", 60 * 60 * 24 * 7))
     """In seconds. How long the session cookie should be allowed to exist before being replaced.
     
     Defaults to 1 week.
     """
-    USER_SESSION_REVALIDATE_AFTER: int = int(os.getenv("SESSION_REVALIDATE_AFTER", 0))
+    USER_SESSION_REVALIDATE_AFTER: int = int(
+        os.getenv("USER_SESSION_REVALIDATE_AFTER", 0)
+    )
     """In seconds. How long the session cookie should be considered valid before running revalidation
     on the users authentication. Within this time, as long as the cookie signature is
     valid, the user will be considered authenticated and all the cookie data will be used.
