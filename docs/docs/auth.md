@@ -82,8 +82,10 @@ There are two primary ways of protecting routes, middlware and decorators.
 ## `AuthMiddleware` middleware
 The `AuthMiddleware` class will require authentication and authorization to all the routes within its router.
 
-## `require_auth` decorator
-The `require_auth` decorator provides protection only to the routes it's applied to. This must be applied before, i.e. below, the route decorator so that no matter how the route function is called, the auth process will be applied.
+## `requires` decorator
+The `requires` decorator provides protection only to the routes it's applied to. This must be applied before, i.e. below, the route decorator so that no matter how the route function is called, the auth process will be applied.
+
+::: mojito.auth.requires
 
 
 # Logging in
@@ -105,3 +107,6 @@ As you can see in the `auth.login()` function we don't have to specify the auth_
 
 # Accessing user data returned by the authentication backend
 The `auth.AuthSessionData` you returned from the Authentication Backend is stored on each request in the `Request.user` attribute and can be accessed anywhere you can access the request.
+
+# Auth configuration
+Global configuration can be provided through the `mojito.config.Config` class or environment variables. See [configuration](configuration.md) for all configuration options.

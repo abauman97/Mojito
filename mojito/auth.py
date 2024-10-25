@@ -183,8 +183,8 @@ def requires(
     login_url if one is set, or to redirect_url if one is given.
 
     Args:
-        scopes (list[str]): Auth scopes to verify the user has. Defaults to [].
-        redirect_url (Optional[list[str]]): Redirect to this url rather than the configured
+        scopes (str | Sequence[str]): Auth scopes to verify the user has. Defaults to [].
+        redirect_url (Optional[str]): Redirect to this url rather than the configured
             login_url.
     """
     scopes_list = [scopes] if isinstance(scopes, str) else list(scopes)

@@ -8,4 +8,8 @@ To access the config through code you can import the config and modify any of th
 from mojito.config import Config
 ```
 
-::: mojito.config.Config
+::: mojito.config
+    options:
+        summary:
+            attributes: true
+        
