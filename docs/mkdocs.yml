@@ -1,5 +1,7 @@
 site_name: Mojito
 site_description: Mojito framework. Fresh, fast, and simple web framework for building HTML-first websites
+site_url: https://abauman97.github.io/Mojito/
+repo_url: https://github.com/abauman97/Mojito
 
 theme:
   name: material
@@ -44,3 +46,4 @@ nav:
   - Auth: auth.md
   - Forms: forms.md
   - Message Flashing: message_flashing.md
+  - Configuration: configuration.md
