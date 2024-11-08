@@ -40,3 +40,15 @@ class Config:
     When present in the Request.user.permissions, this role will bypass any permission (authorization) 
     requirements defined for a route function. This permission does not bypass authentication.
     """
+
+    ROOT_DIR: str = os.getcwd()
+    """The root project directory.
+
+    Defaults to the current working directory.
+    """
+
+    TEMPLATES_DIRECTORY: str = "templates"
+    """The path to the templates directory relative to the ROOT_DIR.
+
+    Defaults to "templates"
+    """

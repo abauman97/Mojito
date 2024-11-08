@@ -2,10 +2,10 @@ from typing import Any
 
 from mojito import (
     AppRouter,
-    Jinja2Templates,
     JSONResponse,
     Mojito,
     Request,
+    Templates,
     auth,
 )
 
@@ -13,7 +13,7 @@ from .db import get_db
 
 app = Mojito()
 
-templates = Jinja2Templates("tests/templates")
+templates = Templates("tests/templates")
 
 main_router = AppRouter()
 
