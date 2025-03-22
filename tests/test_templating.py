@@ -22,6 +22,13 @@ def number_two_route(request: Request):
     )
 
 
+@app.route("/number_3")
+def number_three_route(request: Request):
+    return templates.TemplateResponse(
+        request, "number.jinja", {"number": 3}, block=["subheader", "content"]
+    )
+
+
 def test_index_template():
     result = client.get("/")
     assert result.is_success
@@ -33,4 +40,12 @@ def test_template_partials():
     result = client.get("/number_2")
     assert result.is_success
     assert "<p>The number is: 2</p>" in result.text
+    assert "<h1>Here's the header!</h1>" not in result.text
+
+
+def test_multiple_template_partials():
+    result = client.get("/number_3")
+    assert result.is_success
+    assert "<h3>Here's the subheader!</h3>" in result.text
+    assert "<p>The number is: 3</p>" in result.text
     assert "<h1>Here's the header!</h1>" not in result.text

@@ -1,17 +1,37 @@
 # Templates
-Templates are [Jinja2 Templates](https://jinja.palletsprojects.com/en/stable/templates/) under the hood with some additional features like support for fragments.
+Templates are [Jinja2 Templates](https://jinja.palletsprojects.com/en/stable/templates/) under the hood with some additional features like support for block rendering (fragments).
+
+# Basics
+Templates are used with the `Templates` class and can be used the same way as the [`Jinja2Templates`](https://www.starlette.io/templates/) class is used in Starlette.
+
+```py
+from mojito import Mojito, Request, templating
+
+templates = templating.Templates("templates")
+
+app = Mojito()
+
+@app.route("/")
+def index_route(request: Request):
+    return templates.TemplateResponse(request, "number.jinja", {"number": 1})
+```
+
+The `templates.TemplateResponse()` function always takes the request as it's first argument.
+
+# The Default Environment
+By default you have access to the following variables and functions in the jinja rendering environment:
+ - Variable `request`
+ - Function `url_for()`
 
 # Additional Features
 These are the features on top of the base functionality provided by the Jinja2 templating engine.
 
-## Fragments
-**IN DEVELOPMENT**
-
-Also called partials or blocks, fragments allow you to follow the Locality of Behavior design principal that allow you to render out just a *fragment* or partial part of the template, rather than the whole template. 
+## Block Rendering
+Also called fragments or partials, blocks allow you to follow the Locality of Behavior design principal that allow you to render out just a *block* or series of blocks within the template, rather than the whole template.
 
 This is most useful when using libraries such as [HTMX](https://htmx.org/) to swap sections of the DOM at a time rather than the whole page. See Carson Gross' essay on [Template Fragments](https://htmx.org/essays/template-fragments/) for more on using this method.
 
-### Using fragments
+### Using blocks
 Take the following configuration:
 ```html title="number.jinja"
 <html>
@@ -55,8 +75,11 @@ whereas calling the route `/number_2` will only return the block you specified i
 <p>The number is: 2</p>
 ```
 
-#### Rendering multiple fragments
+### Rendering multiple blocks
 Multiple fragments can be returned by passing a list of block names to the `block` argument of the TemplateResponse. This will render each of the named blocks and concatenate them into a single response. This enables easier [out-of-band updates](https://htmx.org/attributes/hx-swap-oob/) with HTMX.
 
 #### Credits
-This implementation was based off of the [jinja2-fragments](https://github.com/sponsfreixes/jinja2-fragments) library.
+This block rendering implementation was based off of the [jinja2-fragments](https://github.com/sponsfreixes/jinja2-fragments) library.
+
+# Futher Customizing the Jinja2 Environment
+The environment can be customized further in the same way it can for [Starlette's Jinja2Templates](https://www.starlette.io/templates/).
