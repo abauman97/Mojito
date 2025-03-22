@@ -30,6 +30,9 @@ def _process_form(form: FormData, model: type[PydanticModel]) -> dict[str, Any]:
     processed_items: dict[str, Any] = {}
     for item_name, item_value in items:
         # Build dict to return
+        item_name = item_name.replace(
+            "-", "_"
+        )  # TODO - Test replacing dash with underscore in field name
         pydantic_field = fields.get(item_name)
         if isinstance(item_value, str) and not len(item_value) > 0:
             continue  # Skip this value if it is an empty string

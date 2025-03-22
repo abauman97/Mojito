@@ -105,7 +105,6 @@ class FormWithMultipleInputs(BaseModel):
 @app.route("/checkboxes", methods=["POST"])
 async def combine_checkboxes(request: Request):
     form = await Form(request, FormWithMultipleInputs)
-    print(form.model_dump())
     return form.model_dump()
 
 
@@ -129,3 +128,22 @@ def test_form_combine_inputs(form_data: dict[str, str], status: int):
         data=form_data,
     )
     assert result.status_code == status
+
+
+class KebabForm(BaseModel):
+    field_1: str
+    field_2: str
+
+
+@app.route("/kebab_form_inputs", methods=["POST"])
+async def kebab_form_inputs(request: Request):
+    form = await Form(request, KebabForm)
+    return form.model_dump()
+
+
+def test_form_convert_kebab_case():
+    result = client.post(
+        "/kebab_form_inputs", data={"field-1": "kebab", "field_2": "snake"}
+    )
+    assert result.is_success
+    assert "field_1" in result.text
